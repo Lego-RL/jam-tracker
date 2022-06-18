@@ -32,12 +32,47 @@ class LastFM(commands.Cog):
         )
 
     @slash_command(name="last", guilds=guilds)
-    async def last_listened(self, ctx) -> None:
-        track: list[pylast.PlayedTrack] = self.network.get_user(
-            "Lego_RL"
-        ).get_recent_tracks(1)
+    async def last_listened(self, ctx, name: str = "Lego_RL") -> None:
+        """
+        Displays the last song listened to. Supply name with last.fm account
+        you want to use.
+        """
+
+        track: list[pylast.PlayedTrack] = self.network.get_user(name).get_recent_tracks(
+            1
+        )
 
         await ctx.respond(f"Last track played was **{track[0].track.title}**.")
+
+    @slash_command(name="discover", guilds=guilds)
+    async def discover_new_from_favs(self, ctx, name: str = "Lego_RL") -> None:
+        """
+        Displays songs from your favorite artists that the user
+        has never scrobbled before.
+        """
+
+        user = self.network.get_user(name)
+
+        fav_artists: list[pylast.Artist] = user.get_top_artists(
+            period=pylast.PERIOD_3MONTHS, limit=3
+        )
+
+        to_suggest: list[pylast.Track] = []
+
+        for artist, _ in fav_artists:
+            songs: list[tuple(pylast.Track, int)] = artist.get_top_tracks(limit=100)
+            songs.reverse()  # search through least listened tracks first
+
+            for song, _ in songs:
+                if song.get_userplaycount() == 0:
+                    to_suggest.append(song)
+                    break
+
+        rtn = ""
+        for i, song in enumerate(to_suggest):
+            rtn += f"\n{i+1}) {song.get_name()} by {song.get_artist()}"
+
+        await ctx.respond(f"Here are your suggestions:\n{rtn}")
 
 
 def setup(bot: discord.Bot):
