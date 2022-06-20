@@ -45,7 +45,9 @@ class LastFM(commands.Cog):
         await ctx.respond(f"Last track played was **{track[0].track.title}**.")
 
     @slash_command(name="discover", guilds=guilds)
-    async def discover_new_from_favs(self, ctx, name: str = "Lego_RL") -> None:
+    async def discover_new_from_favs(
+        self, ctx, name: str = "Lego_RL", include_remixes: bool = False
+    ) -> None:
         """
         Displays songs from your favorite artists that the user
         has never scrobbled before.
@@ -64,6 +66,9 @@ class LastFM(commands.Cog):
             songs.reverse()  # search through least listened tracks first
 
             for song, _ in songs:
+                if not include_remixes and "remix" in str(song).lower():
+                    continue
+
                 if song.get_userplaycount() == 0:
                     to_suggest.append(song)
                     break
