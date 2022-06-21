@@ -89,8 +89,13 @@ class LastFM(commands.Cog):
 
         now_playing: pylast.Track = user.get_now_playing()
         track: list[pylast.PlayedTrack] = user.get_recent_tracks(5)
-
-        recents_str = f"\n<a:blobjammin:988683824860921857> [{now_playing.get_name()}]({now_playing.get_url()}) - {now_playing.get_artist()}"
+        if now_playing:
+            recents_str = f"\n<a:blobjammin:988683824860921857> [{now_playing.get_name()}]({now_playing.get_url()}) - {now_playing.get_artist()}"
+        
+        else:
+            recents_str = ""
+        
+        
         for i, song in enumerate(track):
             recents_str += f"\n{i+1}) [{song.track.get_name()}]({song.track.get_url()}) - {song.track.get_artist()}"
 
