@@ -56,9 +56,9 @@ class LastFM(commands.Cog):
         you want to use.
         """
 
-        await ctx.respond(
-            f"Now listening to **{self.network.get_user(name).get_now_playing().title}**"
-        )
+        track = self.network.get_user(name).get_now_playing()
+
+        await ctx.respond(f"Now listening to **{track.title}** by {track.artist}!")
 
     @slash_command(name="last", guilds=guilds)
     async def last_listened(self, ctx, name: str = "Lego_RL") -> None:
@@ -71,7 +71,9 @@ class LastFM(commands.Cog):
             1
         )
 
-        await ctx.respond(f"Last track played was **{track[0].track.title}**.")
+        await ctx.respond(
+            f"Last track played was **{track[0].track.title}** by {track[0].track.artist}!"
+        )
 
     @slash_command(name="discover", guilds=guilds)
     async def discover_new_from_favs(
