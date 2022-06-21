@@ -50,7 +50,7 @@ class LastFM(commands.Cog):
         )
 
     @slash_command(name="now", guilds=guilds)
-    async def now_listening(self, ctx, name: str = "Lego_RL"):
+    async def now_listening(self, ctx: ApplicationContext, name: str = "Lego_RL"):
         """
         Displays what you are currently listening to. Supply name with last.fm account
         you want to use.
@@ -61,7 +61,9 @@ class LastFM(commands.Cog):
         await ctx.respond(f"Now listening to **{track.title}** by {track.artist}!")
 
     @slash_command(name="last", guilds=guilds)
-    async def last_listened(self, ctx, name: str = "Lego_RL") -> None:
+    async def last_listened(
+        self, ctx: ApplicationContext, name: str = "Lego_RL"
+    ) -> None:
         """
         Displays the last song listened to. Supply name with last.fm account
         you want to use.
@@ -75,9 +77,39 @@ class LastFM(commands.Cog):
             f"Last track played was **{track[0].track.title}** by {track[0].track.artist}!"
         )
 
+    @slash_command(name="recent", guilds=guilds)
+    async def recent_tracks(
+        self, ctx: ApplicationContext, name: str = "Lego_RL"
+    ) -> None:
+        """
+        Display the user's last 5 played tracks.
+        """
+
+        user: pylast.User = self.network.get_user(name)
+
+        now_playing: pylast.Track = user.get_now_playing()
+        track: list[pylast.PlayedTrack] = user.get_recent_tracks(5)
+
+        recents_str = f"\n<a:blobjammin:988683824860921857> [{now_playing.get_name()}]({now_playing.get_url()}) - {now_playing.get_artist()}"
+        for i, song in enumerate(track):
+            recents_str += f"\n{i+1}) [{song.track.get_name()}]({song.track.get_url()}) - {song.track.get_artist()}"
+
+        embed = discord.Embed(
+            title=f"{user.get_name()}'s recently played tracks",
+            color=discord.Color.gold(),
+            description=recents_str,
+        )
+
+        embed.set_thumbnail(url=ctx.user.avatar.url)
+
+        await ctx.respond(embed=embed)
+
     @slash_command(name="discover", guilds=guilds)
     async def discover_new_from_favs(
-        self, ctx, name: str = "Lego_RL", include_remixes: bool = False
+        self,
+        ctx: ApplicationContext,
+        name: str = "Lego_RL",
+        include_remixes: bool = False,
     ) -> None:
         """
         Displays songs from your favorite artists that the user
@@ -108,11 +140,21 @@ class LastFM(commands.Cog):
                     to_suggest.append(song)
                     break
 
-        rtn = ""
+        songs_str = ""
         for i, song in enumerate(to_suggest):
-            rtn += f"\n{i+1}) {song.get_name()} by {song.get_artist()}"
+            songs_str += (
+                f"\n{i+1}) [{song.get_name()}]({song.get_url()}) - {song.get_artist()}"
+            )
 
-        await ctx.respond(f"Here are your suggestions:\n{rtn}")
+        embed = discord.Embed(
+            title=f"Listening suggestions for your top artists!",
+            color=discord.Color.gold(),
+            description=songs_str,
+        )
+
+        embed.set_thumbnail(url=ctx.user.avatar.url)
+
+        await ctx.respond(embed=embed)
 
     @top.command(name="artists", description="See a list of your top ten artists.")
     @option(
