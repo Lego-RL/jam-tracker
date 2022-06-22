@@ -19,6 +19,8 @@ PERIODS = {
     "overall": pylast.PERIOD_OVERALL,
 }
 
+BLOB_JAMMIN: str = "<a:blobjammin:988683824860921857>"  # emote
+
 
 class LastFM(commands.Cog):
     def __init__(self, bot):
@@ -27,8 +29,8 @@ class LastFM(commands.Cog):
         self.network = pylast.LastFMNetwork(
             api_key=LFM_API_KEY,
             api_secret=LFM_API_SECRET,
-            username=LFM_USER,
-            password_hash=LFM_PASS,
+            # username=LFM_USER,
+            # password_hash=LFM_PASS,
         )
 
     top = SlashCommandGroup(
@@ -85,27 +87,72 @@ class LastFM(commands.Cog):
         Display the user's last 5 played tracks.
         """
 
+        await ctx.defer()
+
         user: pylast.User = self.network.get_user(name)
 
         now_playing: pylast.Track = user.get_now_playing()
-        track: list[pylast.PlayedTrack] = user.get_recent_tracks(5)
-        if now_playing:
-            recents_str = f"\n<a:blobjammin:988683824860921857> [{now_playing.get_name()}]({now_playing.get_url()}) - {now_playing.get_artist()}"
-        
-        else:
-            recents_str = ""
-        
-        
-        for i, song in enumerate(track):
-            recents_str += f"\n{i+1}) [{song.track.get_name()}]({song.track.get_url()}) - {song.track.get_artist()}"
+        num_get = (
+            4 if now_playing else 5
+        )  # only get 4 tracks if user is already playing a 5th
+
+        track: list[pylast.PlayedTrack] = user.get_recent_tracks(num_get)
 
         embed = discord.Embed(
-            title=f"{user.get_name()}'s recently played tracks",
             color=discord.Color.gold(),
-            description=recents_str,
         )
 
+        image_url = user.get_image()
+
+        if image_url:
+            embed.set_author(
+                name=f"{user.get_name()}'s recently played tracks",
+                icon_url=image_url,
+            )
+
+        else:  # if user has no image leave off icon
+            embed.set_author(
+                name=f"{user.get_name()}'s recently played tracks",
+            )
+
         embed.set_thumbnail(url=ctx.user.avatar.url)
+
+        if now_playing:
+
+            # off set the song nums by 2 if listening song currently
+            # one to start counting from 1, and 2 if now_playing is the #1
+            number_offset: int = 2
+
+            track_name, track_artist = now_playing.get_name(), now_playing.get_artist()
+            np_name: str = f"{BLOB_JAMMIN} {track_name} - {track_artist}"
+
+            if (np_track_album := now_playing.get_album()) is not None:
+                np_value: str = f"{np_track_album.get_name()} | {now_playing.get_userplaycount()} scrobbles"
+
+            else:
+                np_value: str = f"{now_playing.get_playcount()} scrobbles"
+
+            embed.add_field(name=np_name, value=np_value, inline=False)
+
+        else:
+            number_offset: int = 1
+
+        for i, song in enumerate(track):
+
+            song_track: pylast.Track = song.track
+            song_track.username = name
+
+            track_name: str = f"{i+number_offset}) {song_track.get_name()} - {song_track.get_artist()}"
+
+            if song.album is not None:
+                track_value: str = (
+                    f"{song.album} | {song_track.get_userplaycount()} scrobbles"
+                )
+
+            else:
+                track_value: str = f"{song_track.get_userplaycount()} scrobbles"
+
+            embed.add_field(name=track_name, value=track_value, inline=False)
 
         await ctx.respond(embed=embed)
 
