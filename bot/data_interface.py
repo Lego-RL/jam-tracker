@@ -2,6 +2,11 @@ import discord
 
 import json
 
+import platform
+
+up_one_file = ".." if "linux" in platform.platform().lower() else "."
+data_path = up_one_file + "/data/lfm-users.json"
+
 
 def store_user(discord_id: int, lfm_user: str) -> None:
     """
