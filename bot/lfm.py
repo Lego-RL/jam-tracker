@@ -1,10 +1,10 @@
-import string
 import discord
 from discord import ApplicationContext, Embed
 from discord.commands import slash_command, SlashCommandGroup, option
 from discord.ext import commands
 
 import pylast
+import requests
 
 from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
 
@@ -24,7 +24,7 @@ BLOB_JAMMIN: str = "<a:blobjammin:988683824860921857>"  # emote
 
 class LastFM(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: discord.Bot = bot
 
         self.network = pylast.LastFMNetwork(
             api_key=LFM_API_KEY,
@@ -36,6 +36,13 @@ class LastFM(commands.Cog):
     top = SlashCommandGroup(
         "top",
         "See info on your top artists, tracks, etc.",
+        guilds=guilds,
+        guild_ids=guilds,
+    )
+
+    pfp = SlashCommandGroup(
+        "pfp",
+        "Commands related to the bot's profile picture!",
         guilds=guilds,
         guild_ids=guilds,
     )
@@ -254,6 +261,36 @@ class LastFM(commands.Cog):
         embed.set_thumbnail(url=ctx.user.avatar.url)
 
         await ctx.respond(embed=embed)
+
+    @pfp.command(
+        name="update",
+        description="Update the bot's profile picture to album art of your choice! Approved users only.",
+    )
+    async def pfp_change(self, ctx: ApplicationContext, album: str) -> None:
+        """
+        Update bot's profile picture to cover art of the given
+        album, if the album is found.
+        """
+
+        # limit where command can be used
+        approved_guilds = [938179110558105672, 315782312476409867]
+
+        if ctx.guild_id not in approved_guilds:
+            await ctx.respond(
+                "You do not have permission to use this command, silly goose!"
+            )
+            return
+
+        possibilities = pylast.AlbumSearch(album_name=album, network=self.network)
+        first_result: pylast.Album = possibilities.get_next_page()[0]
+
+        item_art_url = first_result.get_cover_image()
+        item_art = requests.get(item_art_url).content
+
+        await self.bot.user.edit(avatar=item_art)
+        await ctx.respond(
+            f"Successfully set the profile picture!\n`{first_result.get_name()} by {first_result.get_artist()}`"
+        )
 
 
 def setup(bot: discord.Bot):
