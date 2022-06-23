@@ -1,12 +1,21 @@
+import traceback
+
+
 import discord
+import discord.commands
 from discord import ApplicationContext, Embed
 from discord.commands import slash_command, SlashCommandGroup, option
 from discord.ext import commands
 
+from discord.errors import CheckFailure
+
 import pylast
 import requests
 
+
 from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
+
+from data_interface import store_user, retrieve_lfm_username, get_correct_lfm_user
 
 guilds = [315782312476409867, 938179110558105672]
 
@@ -22,6 +31,21 @@ PERIODS = {
 BLOB_JAMMIN: str = "<a:blobjammin:988683824860921857>"  # emote
 
 
+def has_set_lfm_user():
+    """
+    Decorator to check if discord user
+    has already set their last.fm account
+    with the bot.
+    """
+
+    def predicate(ctx):
+        lfm_user = retrieve_lfm_username(ctx.user.id)
+
+        return lfm_user is not None
+
+    return commands.check(predicate)
+
+
 class LastFM(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
@@ -32,6 +56,13 @@ class LastFM(commands.Cog):
             # username=LFM_USER,
             # password_hash=LFM_PASS,
         )
+
+    lfm = SlashCommandGroup(
+        "lfm",
+        "Commands related to last.fm.",
+        guilds=guilds,
+        guild_ids=guilds,
+    )
 
     top = SlashCommandGroup(
         "top",
@@ -47,36 +78,100 @@ class LastFM(commands.Cog):
         guild_ids=guilds,
     )
 
+    @has_set_lfm_user()
     @slash_command(name="scrobbles", guilds=guilds)
-    async def scrobbles(self, ctx, name: str = "Lego_RL"):
+    async def scrobbles(self, ctx: ApplicationContext, user: discord.User = None):
         """
         Display how many total scrobbles the user has.
         """
 
-        user = self.network.get_user(name)
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_correct_lfm_user(ctx.user.id, user)
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
+
+        user: pylast.User = self.network.get_user(name)
         await ctx.respond(
             f"{user.get_name()} has **{user.get_playcount()}** total scrobbles!"
         )
 
+    @has_set_lfm_user()
     @slash_command(name="now", guilds=guilds)
-    async def now_listening(self, ctx: ApplicationContext, name: str = "Lego_RL"):
+    async def now_listening(self, ctx: ApplicationContext, user: discord.User = None):
         """
         Displays what you are currently listening to. Supply name with last.fm account
         you want to use.
         """
 
-        track = self.network.get_user(name).get_now_playing()
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name = get_correct_lfm_user(ctx.user.id, user)
 
-        await ctx.respond(f"Now listening to **{track.title}** by {track.artist}!")
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
 
+        user: pylast.User = self.network.get_user(name)
+
+        track = user.get_now_playing()
+        if track is None:
+
+            await ctx.respond(
+                f"**{user.get_name()}** is not currently listening to any track!"
+            )
+            return
+        track.username = name
+
+        embed_desc = f"{BLOB_JAMMIN} **[{track.get_title()}]({track.get_url()})** - {track.artist}\n{track.get_album().get_name()}"
+
+        embed = discord.Embed(
+            color=discord.Color.gold(),
+            description=embed_desc,
+        )
+
+        image_url = user.get_image()
+
+        if image_url:
+            embed.set_author(
+                name=f"{user.get_name()} - Now Listening",
+                icon_url=image_url,
+            )
+
+        else:  # if user has no image leave off icon
+            embed.set_author(
+                name=f"{user.get_name()} - Now Listening",
+            )
+
+        embed.set_footer(
+            text=f"{user.get_name()} has scrobbled this track {track.get_userplaycount()} times!"
+        )
+        embed.set_thumbnail(url=track.get_cover_image())
+
+        await ctx.respond(embed=embed)
+
+    @has_set_lfm_user()
     @slash_command(name="last", guilds=guilds)
     async def last_listened(
-        self, ctx: ApplicationContext, name: str = "Lego_RL"
+        self, ctx: ApplicationContext, user: discord.User = None
     ) -> None:
         """
         Displays the last song listened to. Supply name with last.fm account
         you want to use.
         """
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_correct_lfm_user(ctx.user.id, user)
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
 
         track: list[pylast.PlayedTrack] = self.network.get_user(name).get_recent_tracks(
             1
@@ -86,13 +181,23 @@ class LastFM(commands.Cog):
             f"Last track played was **{track[0].track.title}** by {track[0].track.artist}!"
         )
 
+    @has_set_lfm_user()
     @slash_command(name="recent", guilds=guilds)
     async def recent_tracks(
-        self, ctx: ApplicationContext, name: str = "Lego_RL"
+        self, ctx: ApplicationContext, user: discord.User = None
     ) -> None:
         """
         Display the user's last 5 played tracks.
         """
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_correct_lfm_user(ctx.user.id, user)
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
 
         await ctx.defer()
 
@@ -149,8 +254,17 @@ class LastFM(commands.Cog):
             song_track.username = name
 
             # if no cover art is set bc no now_playing song atm, set to last played songs art
-            if i == 0 and not now_playing:
-                embed.set_thumbnail(url=song_track.get_cover_image())
+            if not now_playing and embed.thumbnail.url == discord.Embed.Empty:
+                try:
+                    cover_img_url = song_track.get_cover_image()
+                    if cover_img_url is not None:
+                        embed.set_thumbnail(url=cover_img_url)
+
+                except IndexError:
+                    pass
+
+                except Exception:
+                    print(traceback.format_exc())
 
             embed_string += f"{i+number_offset}) **[{song_track.get_name()}]({song_track.get_url()})** - {song_track.get_artist()}\n"
 
@@ -169,17 +283,27 @@ class LastFM(commands.Cog):
 
         await ctx.respond(embed=embed)
 
+    @has_set_lfm_user()
     @slash_command(name="discover", guilds=guilds)
     async def discover_new_from_favs(
         self,
         ctx: ApplicationContext,
-        name: str = "Lego_RL",
+        user: discord.User = None,
         include_remixes: bool = False,
     ) -> None:
         """
         Displays songs from your favorite artists that the user
         has never scrobbled before.
         """
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_correct_lfm_user(ctx.user.id, user)
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
 
         user = self.network.get_user(name)
 
@@ -221,6 +345,24 @@ class LastFM(commands.Cog):
 
         await ctx.respond(embed=embed)
 
+    @lfm.command(
+        name="set", description="Set last.fm username to use for all last.fm commands."
+    )
+    async def lfm_user_set(self, ctx: ApplicationContext, lfm_user: str) -> None:
+        """
+        Gets discord user's last.fm username to store for use with all
+        last.fm related commands.
+        """
+        try:
+            store_user(ctx.user.id, lfm_user)
+            await ctx.respond(
+                f"Successfully stored `{lfm_user}` as your last.fm account!"
+            )
+
+        except Exception as e:
+            print(f"Oh no, error in lfm_user_set func!: {e}")
+
+    @has_set_lfm_user()
     @top.command(name="artists", description="See a list of your top ten artists.")
     @option(
         name="period",
@@ -233,13 +375,22 @@ class LastFM(commands.Cog):
     async def top_artists(
         self,
         ctx: ApplicationContext,
-        name: str = "Lego_RL",
+        user: discord.User = None,
         period: str = "overall",
     ) -> None:
         """
         Display the user's top 10 artists, and how many scrobbles
         the user has for each.
         """
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_correct_lfm_user(ctx.user.id, user)
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
 
         lfm_period = PERIODS[period]
 
@@ -249,16 +400,110 @@ class LastFM(commands.Cog):
         )
 
         artists_str: str = str()
+
+        top_ten_scrobbles: int = 0
         for i in range(10):
+            top_ten_scrobbles += int(fav_artists[i].weight)
             artists_str += f"\n{i+1}) [{fav_artists[i].item.name}]({fav_artists[i].item.get_url()}) - **{fav_artists[i].weight}** scrobbles"
 
         embed = discord.Embed(
-            title=f"{user.get_name()}'s Top 10 Artists ({period})",
+            # title=f"{user.get_name()}'s Top 10 Artists ({period})",
             color=discord.Color.gold(),
             description=artists_str,
         )
 
-        embed.set_thumbnail(url=ctx.user.avatar.url)
+        percent_scrobbles = (top_ten_scrobbles / user.get_playcount()) * 100
+
+        embed.set_footer(
+            text=f"These artists make up {percent_scrobbles:0.2f}% of {user.get_name()}'s total scrobbles!"
+        )
+
+        image_url = user.get_image()
+
+        if image_url:
+            embed.set_author(
+                name=f"{user.get_name()}'s Top 10 Artists ({period})",
+                icon_url=image_url,
+            )
+
+        else:
+            embed.set_author(name=f"{user.get_name()}'s Top 10 Artists ({period})")
+
+        await ctx.respond(embed=embed)
+
+    @has_set_lfm_user()
+    @top.command(name="tracks", description="See a list of your top ten tracks.")
+    @option(
+        name="period",
+        type=str,
+        description="Decides the period of time to find your top tracks for",
+        choices=["7 days", "1 month", "3 months", "6 months", "12 months", "overall"],
+        required=False,
+        default="overall",
+    )
+    async def top_tracks(
+        self,
+        ctx: ApplicationContext,
+        user: discord.User = None,
+        period: str = "overall",
+    ) -> None:
+        """
+        Display the user's top 10 tracks, and how many scrobbles
+        the user has for each.
+        """
+
+        await ctx.defer()
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_correct_lfm_user(ctx.user.id, user)
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
+
+        lfm_period = PERIODS[period]
+
+        user: pylast.User = self.network.get_user(name)
+        fav_tracks: list[pylast.TopItem] = user.get_top_tracks(
+            period=lfm_period, limit=10
+        )
+
+        tracks_str: str = str()
+        top_ten_scrobbles: int = 0
+        for i in range(10):
+            top_ten_scrobbles += fav_tracks[i].weight
+            tracks_str += f"\n{i+1}) [{fav_tracks[i].item.get_name()}]({fav_tracks[i].item.get_url()}) - **{fav_tracks[i].weight}** scrobbles"
+
+        embed = discord.Embed(
+            color=discord.Color.gold(),
+            description=tracks_str,
+        )
+
+        percent_scrobbles = (top_ten_scrobbles / user.get_playcount()) * 100
+
+        embed.set_footer(
+            text=f"These tracks make up {percent_scrobbles:0.2f}% of {user.get_name()}'s total scrobbles!"
+        )
+
+        image_url = user.get_image()
+
+        if image_url:
+            embed.set_author(
+                name=f"{user.get_name()}'s Top 10 Tracks ({period})",
+                icon_url=image_url,
+            )
+
+        else:
+            embed.set_author(name=f"{user.get_name()}'s Top 10 Tracks ({period})")
+
+        try:
+            if cover_img := fav_tracks[0].item.get_cover_image():
+                embed.set_thumbnail(url=cover_img)
+
+        except IndexError:
+            pass
 
         await ctx.respond(embed=embed)
 
@@ -291,6 +536,14 @@ class LastFM(commands.Cog):
         await ctx.respond(
             f"Successfully set the profile picture!\n`{first_result.get_name()} by {first_result.get_artist()}`"
         )
+
+    async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
+        if isinstance(error, CheckFailure):
+            await ctx.respond(
+                f"{ctx.user.mention}, make sure you have set your last.fm username using `/lfm set [username]`!"
+            )
+        else:
+            print(f"o no, error!\n{error}\n{traceback.format_exc()}")
 
 
 def setup(bot: discord.Bot):
