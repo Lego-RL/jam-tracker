@@ -1,7 +1,6 @@
 import discord
 
 import json
-
 import platform
 
 up_one_file = ".." if platform.platform().lower().find("linux") > -1 else "."
