@@ -3,7 +3,7 @@ import traceback
 
 import discord
 import discord.commands
-from discord import ApplicationContext, Embed
+from discord import ApplicationContext
 from discord.commands import slash_command, SlashCommandGroup, option
 from discord.ext import commands
 

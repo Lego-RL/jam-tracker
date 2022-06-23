@@ -14,7 +14,7 @@ LFM_PASS = os.getenv("LFM_PASS")
 bot = discord.Bot()
 
 
-extensions = ["lfm"]
+extensions = ["lfm", "admin"]
 
 for ext in extensions:
     bot.load_extension(ext)
