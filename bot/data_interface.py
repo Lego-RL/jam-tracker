@@ -4,7 +4,7 @@ import json
 
 import platform
 
-up_one_file = ".." if "linux" in platform.platform().lower() else "."
+up_one_file = ".." if platform.platform().lower().find("linux") > -1 else "."
 data_path = up_one_file + "/data/lfm-users.json"
 
 
