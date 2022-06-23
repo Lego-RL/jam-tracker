@@ -14,12 +14,12 @@ def store_user(discord_id: int, lfm_user: str) -> None:
     last.fm account in lfm-users.json.
     """
 
-    with open("./data/lfm-users.json", "r") as f:
+    with open(data_path, "r") as f:
         data: dict[str, str] = json.load(f)
 
     data[str(discord_id)] = lfm_user
 
-    with open("./data/lfm-users.json", "w") as f:
+    with open(data_path, "w") as f:
         json.dump(data, f, indent=4)
 
 
@@ -29,7 +29,7 @@ def retrieve_lfm_username(discord_id: int) -> str:
     user id.
     """
 
-    with open("./data/lfm-users.json", "r") as f:
+    with open(data_path, "r") as f:
         data: dict = json.load(f)
 
     lfm_user = data.get(str(discord_id))
