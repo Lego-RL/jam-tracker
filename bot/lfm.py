@@ -17,7 +17,7 @@ from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
 
 from data_interface import store_user, retrieve_lfm_username, get_correct_lfm_user
 
-guilds = [315782312476409867, 938179110558105672]
+guilds = [315782312476409867, 938179110558105672, 957732024859365466]
 
 PERIODS = {
     "7 days": pylast.PERIOD_7DAYS,
