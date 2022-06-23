@@ -115,24 +115,23 @@ class LastFM(commands.Cog):
                 name=f"{user.get_name()}'s recently played tracks",
             )
 
-        embed.set_thumbnail(url=ctx.user.avatar.url)
-
+        embed_string: str = ""
         if now_playing:
+
+            embed.set_thumbnail(url=now_playing.get_cover_image())
 
             # off set the song nums by 2 if listening song currently
             # one to start counting from 1, and 2 if now_playing is the #1
             number_offset: int = 2
 
             track_name, track_artist = now_playing.get_name(), now_playing.get_artist()
-            np_name: str = f"{BLOB_JAMMIN} {track_name} - {track_artist}"
+            embed_string += f"{BLOB_JAMMIN} **[{track_name}]({now_playing.get_url()})** - {track_artist}\n"
 
             if (np_track_album := now_playing.get_album()) is not None:
-                np_value: str = f"{np_track_album.get_name()} | {now_playing.get_userplaycount()} scrobbles"
+                embed_string += f"{np_track_album.get_name()} | {now_playing.get_userplaycount()} scrobbles\n\n"
 
             else:
-                np_value: str = f"{now_playing.get_playcount()} scrobbles"
-
-            embed.add_field(name=np_name, value=np_value, inline=False)
+                embed_string += f"{now_playing.get_playcount()} scrobbles\n\n"
 
         else:
             number_offset: int = 1
@@ -142,17 +141,24 @@ class LastFM(commands.Cog):
             song_track: pylast.Track = song.track
             song_track.username = name
 
-            track_name: str = f"{i+number_offset}) {song_track.get_name()} - {song_track.get_artist()}"
+            # if no cover art is set bc no now_playing song atm, set to last played songs art
+            if i == 0 and not now_playing:
+                embed.set_thumbnail(url=song_track.get_cover_image())
+
+            embed_string += f"{i+number_offset}) **[{song_track.get_name()}]({song_track.get_url()})** - {song_track.get_artist()}\n"
 
             if song.album is not None:
-                track_value: str = (
-                    f"{song.album} | {song_track.get_userplaycount()} scrobbles"
+                embed_string += (
+                    f"{song.album} | {song_track.get_userplaycount()} scrobbles\n\n"
                 )
 
             else:
-                track_value: str = f"{song_track.get_userplaycount()} scrobbles"
+                embed_string += f"{song_track.get_userplaycount()} scrobbles\n\n"
 
-            embed.add_field(name=track_name, value=track_value, inline=False)
+        embed.description = embed_string
+        embed.set_footer(
+            text=f"{user.get_name()} has {user.get_playcount()} total scrobbles!"
+        )
 
         await ctx.respond(embed=embed)
 
