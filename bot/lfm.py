@@ -85,6 +85,8 @@ class LastFM(commands.Cog):
         Display how many total scrobbles the user has.
         """
 
+        await ctx.defer()
+
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
         name: str = get_correct_lfm_user(ctx.user.id, user)
 
@@ -106,6 +108,8 @@ class LastFM(commands.Cog):
         Displays what you are currently listening to. Supply name with last.fm account
         you want to use.
         """
+
+        await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
         name = get_correct_lfm_user(ctx.user.id, user)
@@ -163,6 +167,8 @@ class LastFM(commands.Cog):
         Displays the last song listened to. Supply name with last.fm account
         you want to use.
         """
+
+        await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
         name: str = get_correct_lfm_user(ctx.user.id, user)
@@ -296,6 +302,8 @@ class LastFM(commands.Cog):
         has never scrobbled before.
         """
 
+        await ctx.defer()
+
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
         name: str = get_correct_lfm_user(ctx.user.id, user)
 
@@ -353,6 +361,9 @@ class LastFM(commands.Cog):
         Gets discord user's last.fm username to store for use with all
         last.fm related commands.
         """
+
+        await ctx.defer()
+
         try:
             store_user(ctx.user.id, lfm_user)
             await ctx.respond(
@@ -516,6 +527,8 @@ class LastFM(commands.Cog):
         Update bot's profile picture to cover art of the given
         album, if the album is found.
         """
+
+        await ctx.defer()
 
         # limit where command can be used
         approved_guilds = [938179110558105672, 315782312476409867]
