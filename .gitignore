@@ -2,4 +2,5 @@
 *.pyc
 /env
 .env
-lfm-users.json
+test.ipynb
+user_scrobble_data.db
