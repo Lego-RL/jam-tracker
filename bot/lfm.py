@@ -11,6 +11,7 @@ from discord.errors import CheckFailure
 
 import pylast
 import requests
+from cmd_data_helpers import StrippedTrack
 
 
 from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
@@ -21,6 +22,8 @@ from data_interface import (
     get_lfm_username,
     get_lfm_username_update_data,
 )
+
+from cmd_data_helpers import get_five_recent_tracks
 
 guilds = [315782312476409867, 938179110558105672, 957732024859365466]
 
@@ -216,14 +219,14 @@ class LastFM(commands.Cog):
             )
             return
 
+        stripped_tracks: list[StrippedTrack] = get_five_recent_tracks(name)
+
         user: pylast.User = self.network.get_user(name)
 
         now_playing: pylast.Track = user.get_now_playing()
         num_get = (
             4 if now_playing else 5
         )  # only get 4 tracks if user is already playing a 5th
-
-        track: list[pylast.PlayedTrack] = user.get_recent_tracks(num_get)
 
         embed = discord.Embed(
             color=discord.Color.gold(),
@@ -244,8 +247,9 @@ class LastFM(commands.Cog):
 
         embed_string: str = ""
         if now_playing:
+            cover_image: str = now_playing.get_cover_image()
 
-            embed.set_thumbnail(url=now_playing.get_cover_image())
+            embed.set_thumbnail(url=cover_image)
 
             # off set the song nums by 2 if listening song currently
             # one to start counting from 1, and 2 if now_playing is the #1
@@ -262,34 +266,24 @@ class LastFM(commands.Cog):
 
         else:
             number_offset: int = 1
+            cover_image: str = None
 
-        for i, song in enumerate(track):
+        for i, song in enumerate(stripped_tracks):
+            if number_offset == 2 and i == 4:
+                break
 
-            song_track: pylast.Track = song.track
-            song_track.username = name
-
-            # if no cover art is set bc no now_playing song atm, set to last played songs art
-            if not now_playing and embed.thumbnail.url == discord.Embed.Empty:
+            if not embed.thumbnail.url and i == 0:
                 try:
-                    cover_img_url = song_track.get_cover_image()
-                    if cover_img_url is not None:
-                        embed.set_thumbnail(url=cover_img_url)
+                    cover_image_url = self.network.get_track(
+                        song.artist, song.title
+                    ).get_cover_image()
+                    embed.set_thumbnail(url=cover_image_url)
 
-                except IndexError:
-                    pass
+                except Exception as e:
+                    traceback.format_exc()
 
-                except Exception:
-                    print(traceback.format_exc())
-
-            embed_string += f"{i+number_offset}) **[{song_track.get_name()}]({song_track.get_url()})** - {song_track.get_artist()}\n"
-
-            if song.album is not None:
-                embed_string += (
-                    f"{song.album} | {song_track.get_userplaycount()} scrobbles\n\n"
-                )
-
-            else:
-                embed_string += f"{song_track.get_userplaycount()} scrobbles\n\n"
+            embed_string += f"{i+number_offset}) **[{song.title}]({song.lfm_url})** - {song.artist}\n"
+            embed_string += f"{song.album} | {song.track_plays} scrobbles\n\n"
 
         embed.description = embed_string
         embed.set_footer(

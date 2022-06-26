@@ -1,4 +1,3 @@
-from typing import final
 import discord
 import pylast
 from sqlalchemy import (
@@ -24,7 +23,6 @@ engine = create_engine(url=f"sqlite:///{nav_to_root}{db_path}", future=True)
 Base = declarative_base()
 
 Session = sessionmaker(bind=engine)
-session: Session = Session()
 
 
 class User(Base):
@@ -49,6 +47,7 @@ class Scrobble(Base):
     title = Column(String, nullable=False)
     artist = Column(String, nullable=False)
     album = Column(String)
+    lfm_url = Column(String)
     unix_timestamp = Column(Integer, nullable=False)
 
     user_id = Column(Integer, ForeignKey("user_account.id"))
@@ -57,7 +56,8 @@ class Scrobble(Base):
     user = relationship("User", uselist=False)
 
     def __repr__(self):
-        return f"Scrobble({self.id=!r}, {self.title=!r}, {self.artist=!r}, {self.album=!r}, {self.listen_duration=!r}, {self.unix_timestamp=!r}, {self.user_id=!r})"
+        # return f"Scrobble({self.id=!r}, {self.title=!r}, {self.artist=!r}, {self.album=!r}, {self.lfm_url=!r}, {self.cover_art_url=!r}, {self.unix_timestamp=!r}, {self.user_id=!r})"
+        return f"Scrobble({self.id=!r}, {self.title=!r}, {self.artist=!r}, {self.album=!r}, {self.lfm_url=!r}, {self.unix_timestamp=!r}, {self.user_id=!r})"
 
 
 Base.metadata.create_all(engine)
@@ -98,6 +98,7 @@ def store_scrobble(discord_id: int, scrobble: pylast.PlayedTrack) -> bool:
         title=title,
         artist=artist,
         album=scrobble.album,
+        lfm_url=scrobble_track.get_url(),
         unix_timestamp=int(scrobble.timestamp),
     )
 
@@ -132,6 +133,7 @@ def store_scrobbles(discord_id: int, scrobbles: list[pylast.PlayedTrack]) -> Non
                 title=title,
                 artist=artist,
                 album=scrobble.album,
+                lfm_url=scrobble_track.get_url(),
                 unix_timestamp=int(scrobble.timestamp),
             )
 
@@ -230,9 +232,6 @@ def update_user_scrobbles(
         if not check_recent_track_stored(user, user_id):
             store_scrobble(user_id, get_last_scrobbled_track(user))
 
-    print(f"storing *{user_id}*'s scrobbles")
-    start = time.time()
-
     latest_timestamp: int = get_last_stored_timestamp(user_id)
     user: pylast.User = network.get_user(lfm_user)
 
@@ -240,17 +239,10 @@ def update_user_scrobbles(
         # make sure it doesn't grab scrobble this timestamp is referring to
         latest_timestamp += 1
 
-        print("storing scrobbles since last timestamp in db!")
         update_helper(user, latest_timestamp)
 
     else:  # user has no scrobbles stored in database
-
-        print("storing all user's scrobbles as they have no stored scrobbles!")
         update_helper(user)
-
-    end = time.time()
-
-    print(f"storing scrobbles took {end - start} seconds!")
 
 
 def retrieve_lfm_username(discord_id: int) -> str:
