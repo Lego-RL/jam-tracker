@@ -12,11 +12,15 @@ from sqlalchemy import (
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 import os
+from platform import system
 import time
 
 db_path = os.path.join("data", "user_scrobble_data.db")
 
-engine = create_engine(url=f"sqlite:///{db_path}", future=True)
+# need a ../ on linux to go up one level before going down to data folder
+nav_to_root = "" if "windows" in system().lower() else r"../"
+
+engine = create_engine(url=f"sqlite:///{nav_to_root}{db_path}", future=True)
 Base = declarative_base()
 
 Session = sessionmaker(bind=engine)
