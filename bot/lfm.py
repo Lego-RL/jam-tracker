@@ -19,7 +19,8 @@ from data_interface import (
     store_user,
     store_scrobble,
     retrieve_lfm_username,
-    get_correct_lfm_user,
+    get_lfm_username,
+    get_lfm_username_update_data,
 )
 
 guilds = [315782312476409867, 938179110558105672, 957732024859365466]
@@ -113,7 +114,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_correct_lfm_user(ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -137,7 +138,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name = get_correct_lfm_user(ctx.user.id, user)
+        name = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -176,9 +177,13 @@ class LastFM(commands.Cog):
                 name=f"{user.get_name()} - Now Listening",
             )
 
-        embed.set_footer(
-            text=f"{user.get_name()} has scrobbled this track {track.get_userplaycount()} times!"
-        )
+        try:
+            embed.set_footer(
+                text=f"{user.get_name()} has scrobbled this track {track.get_userplaycount()} times!"
+            )
+        except pylast.WSError as e:  # occurs sometimes when can't get track playcount? look more in depth later
+            print(f"Error, likely due to failed retrieving track.get_userplaycount()")
+
         embed.set_thumbnail(url=track.get_cover_image())
 
         await ctx.respond(embed=embed)
@@ -196,7 +201,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_correct_lfm_user(ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -221,16 +226,16 @@ class LastFM(commands.Cog):
         Display the user's last 5 played tracks.
         """
 
+        await ctx.defer()
+
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_correct_lfm_user(ctx.user.id, user)
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
                 f"{ctx.user.mention}, this user does not have a last.fm username set!"
             )
             return
-
-        await ctx.defer()
 
         user: pylast.User = self.network.get_user(name)
 
@@ -330,7 +335,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_correct_lfm_user(ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -420,7 +425,7 @@ class LastFM(commands.Cog):
         """
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_correct_lfm_user(ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -491,7 +496,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_correct_lfm_user(ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)  # must pass network
 
         if name is None:
             await ctx.respond(
