@@ -17,7 +17,6 @@ from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
 
 from data_interface import (
     store_user,
-    store_scrobble,
     retrieve_lfm_username,
     get_lfm_username,
     get_lfm_username_update_data,
@@ -83,26 +82,6 @@ class LastFM(commands.Cog):
         guilds=guilds,
         guild_ids=guilds,
     )
-
-    @commands.is_owner()
-    @has_set_lfm_user()
-    @slash_command(name="scrobble_now", guilds=guilds)
-    async def store_last_scrobble(self, ctx: ApplicationContext) -> None:
-        """
-        For testing purposes, stores the most recent scrobble in the database.
-        """
-
-        name: str = retrieve_lfm_username(ctx.user.id)
-        user: pylast.User = self.network.get_user(name)
-
-        track: list[pylast.PlayedTrack] = user.get_recent_tracks(limit=1)
-
-        if track != []:
-
-            store_scrobble(ctx.user.id, track[0])
-
-        else:
-            await ctx.respond(f"Could not find last track scrobbled!")
 
     @has_set_lfm_user()
     @slash_command(name="scrobbles", guilds=guilds)

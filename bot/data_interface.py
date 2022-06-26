@@ -1,10 +1,9 @@
+from typing import final
 import discord
 import pylast
-import sqlalchemy
 from sqlalchemy import (
     Column,
     ForeignKey,
-    DateTime,
     Integer,
     String,
     create_engine,
@@ -46,15 +45,11 @@ class Scrobble(Base):
     title = Column(String, nullable=False)
     artist = Column(String, nullable=False)
     album = Column(String)
-
-    # in seconds
-    listen_duration = Column(Integer, nullable=False)
     unix_timestamp = Column(Integer, nullable=False)
 
     user_id = Column(Integer, ForeignKey("user_account.id"))
 
     # each scrobble belongs to one single user
-    # user = relationship("User", back_populates="scrobble_entries", uselist=False)
     user = relationship("User", uselist=False)
 
     def __repr__(self):
@@ -93,17 +88,16 @@ def store_scrobble(discord_id: int, scrobble: pylast.PlayedTrack) -> bool:
     """
 
     scrobble_track: pylast.Track = scrobble.track
+    artist, title = str(scrobble_track).split(sep=" - ", maxsplit=1)
 
     new_scrobble = Scrobble(
-        title=scrobble_track.get_name(),
-        artist=scrobble_track.get_artist().get_name(),
+        title=title,
+        artist=artist,
         album=scrobble.album,
-        listen_duration=int(scrobble_track.get_duration() / 1000),
         unix_timestamp=int(scrobble.timestamp),
     )
 
     with Session.begin() as session:
-
         user: User = session.query(User).filter_by(discord_id=discord_id).first()
 
         if not user:
@@ -114,42 +108,80 @@ def store_scrobble(discord_id: int, scrobble: pylast.PlayedTrack) -> bool:
     return True
 
 
-def store_scrobbles(discord_id: int, scrobbles: list[pylast.PlayedTrack]) -> bool:
+def store_scrobbles(discord_id: int, scrobbles: list[pylast.PlayedTrack]) -> None:
     """
-    Returns True if the scrobble is sucesfully added
-    to the scrobbles table, False otherwise.
+    Return final scrobble to gather its timestamp from if necessary,
+    otherwise return None if user not found.
     """
-
-    new_scrobbles: list[Scrobble] = []
-    for scrobble in scrobbles:
-
-        scrobble_track: pylast.Track = scrobble.track
-
-        try:
-            duration: int = scrobble_track.get_duration()
-
-        except pylast.WSError:  # for tracks that error on duration for some odd reason
-            duration: int = 0
-
-        new_scrobble = Scrobble(
-            title=scrobble_track.get_name(),
-            artist=scrobble_track.get_artist().get_name(),
-            album=scrobble.album,
-            listen_duration=int(duration / 1000),
-            unix_timestamp=int(scrobble.timestamp),
-        )
-        new_scrobbles.append(new_scrobble)
 
     with Session.begin() as session:
-
         user: User = session.query(User).filter_by(discord_id=discord_id).first()
 
         if not user:
-            return False
+            return None
 
-        user.scrobble_entries.extend(new_scrobbles)
+        for scrobble in scrobbles:
+            scrobble_track: pylast.Track = scrobble.track
+            artist, title = str(scrobble_track).split(sep=" - ", maxsplit=1)
 
-    return True
+            new_scrobble = Scrobble(
+                title=title,
+                artist=artist,
+                album=scrobble.album,
+                unix_timestamp=int(scrobble.timestamp),
+            )
+
+            user.scrobble_entries.append(new_scrobble)
+
+
+def get_last_stored_timestamp(discord_id: int) -> Scrobble:
+    """
+    Return last Scrobble in the database if available.
+    """
+
+    with Session.begin() as session:
+
+        # find User.id for given last fm username (user param)
+        user_id_query = (
+            session.query(User.id).filter_by(discord_id=discord_id).subquery()
+        )
+
+        # find the newest scrobble stored for them
+        latest_timestamp: int = (
+            session.query(func.max(Scrobble.unix_timestamp))
+            .filter_by(user_id=user_id_query.c.id)
+            .scalar()
+        )
+
+        return latest_timestamp
+
+
+def get_last_scrobbled_track(user: pylast.User) -> pylast.PlayedTrack:
+    """
+    Return a user's most recent track, or None.
+    """
+
+    track: list[pylast.PlayedTrack] = user.get_recent_tracks(limit=1)
+
+    if track != []:
+        return track[0]
+
+    return None
+
+
+def check_recent_track_stored(user: pylast.User, discord_id: int) -> bool:
+    """
+    Return true if the user's last scrobbled track is
+    already stored in the database.
+    """
+
+    last_track: pylast.PlayedTrack = get_last_scrobbled_track(user)
+    last_stored_timestamp = get_last_stored_timestamp(discord_id)
+
+    if last_track.timestamp == last_stored_timestamp:
+        return True
+
+    return False
 
 
 def update_user_scrobbles(
@@ -162,70 +194,55 @@ def update_user_scrobbles(
     since the latest stored scrobble for user.
     """
 
+    def update_helper(user: pylast.User, initial_timestamp: int = 0) -> None:
+        """
+        General method of retrieving and storing 100 tracks
+        at a time, that were scrobbled after initial_timestamp.
+        initial_timestamp will = 0 when all tracks need gathered.
+        """
+
+        if initial_timestamp:
+            unstored_scrobbles: list[pylast.PlayedTrack] = user.get_recent_tracks(
+                limit=None, time_from=initial_timestamp, stream=True
+            )
+
+        else:
+            unstored_scrobbles: list[pylast.PlayedTrack] = user.get_recent_tracks(
+                limit=None,
+                stream=True,
+            )
+
+        try:
+            next(unstored_scrobbles)
+
+        # generator is empty, no more scrobbles to store
+        except StopIteration:
+            return
+
+        store_scrobbles(user_id, unstored_scrobbles)
+
+        # check if last check was added, odd bug that
+        # leaves off last track from being stored
+        if not check_recent_track_stored(user, user_id):
+            store_scrobble(user_id, get_last_scrobbled_track(user))
+
     print(f"storing *{user_id}*'s scrobbles")
     start = time.time()
 
-    with Session.begin() as session:
+    latest_timestamp: int = get_last_stored_timestamp(user_id)
+    user: pylast.User = network.get_user(lfm_user)
 
-        # find User.id for given last fm username (user param)
-        user_id_query = session.query(User.id).filter_by(discord_id=user_id).subquery()
+    if latest_timestamp:
+        # make sure it doesn't grab scrobble this timestamp is referring to
+        latest_timestamp += 1
 
-        # find the newest scrobble stored for them
-        latest_timestamp: int = (
-            session.query(func.max(Scrobble.unix_timestamp))
-            .filter_by(user_id=user_id_query.c.id)
-            .scalar()
-        )
+        print("storing scrobbles since last timestamp in db!")
+        update_helper(user, latest_timestamp)
 
-        user: pylast.User = network.get_user(lfm_user)
+    else:  # user has no scrobbles stored in database
 
-        if latest_timestamp:
-            latest_timestamp += (
-                1  # make sure it doesn't grab scrobble this timestamp is referring to
-            )
-            print("storing scrobbles since last timestamp in db!")
-            # user: pylast.User = network.get_user(lfm_user)
-
-            # get all tracks possible since last timestamp
-            unstored_scrobbles: list[pylast.PlayedTrack] = user.get_recent_tracks(
-                limit=None, time_from=latest_timestamp, stream=True
-            )
-
-            temp_tracks: list[pylast.PlayedTrack] = []
-            for track in unstored_scrobbles:
-
-                if len(temp_tracks) >= 100:
-                    store_scrobbles(user_id, temp_tracks)
-                    temp_tracks = list()  # remove all now stored tracks
-
-                else:
-                    temp_tracks.append(track)
-
-            # add all scrobbles that weren't added in increments of 100 in loop
-            if len(temp_tracks) > 0:
-                store_scrobbles(user_id, temp_tracks)
-
-        else:  # user has no scrobbles stored in database
-
-            print("storing all user's scrobbles as they have no stored scrobbles!")
-
-            unstored_scrobbles: list[pylast.PlayedTrack] = user.get_recent_tracks(
-                None, stream=True
-            )
-
-            temp_tracks: list[pylast.PlayedTrack] = []
-            for track in unstored_scrobbles:
-
-                if len(temp_tracks) >= 100:
-                    store_scrobbles(user_id, temp_tracks)
-                    temp_tracks = list()  # remove all now stored tracks
-
-                else:
-                    temp_tracks.append(track)
-
-            # add all scrobbles that weren't added in increments of 100 in loop
-            if len(temp_tracks) > 0:
-                store_scrobbles(user_id, temp_tracks)
+        print("storing all user's scrobbles as they have no stored scrobbles!")
+        update_helper(user)
 
     end = time.time()
 
