@@ -12,7 +12,6 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 import os
 from platform import system
-import time
 
 db_path = os.path.join("data", "user_scrobble_data.db")
 
@@ -173,6 +172,20 @@ def get_last_scrobbled_track(user: pylast.User) -> pylast.PlayedTrack:
         return track[0]
 
     return None
+
+
+def get_number_user_scrobbles_stored(discord_id: int) -> int:
+    """
+    Return the number of scrobbles stored for a given user.
+    """
+
+    with Session.begin() as session:
+        user: User = session.query(User).filter_by(discord_id=discord_id).first()
+
+        if not user:
+            return 0
+
+        return len(user.scrobble_entries)
 
 
 def check_recent_track_stored(user: pylast.User, discord_id: int) -> bool:

@@ -21,6 +21,7 @@ from data_interface import (
     retrieve_lfm_username,
     get_lfm_username,
     get_lfm_username_update_data,
+    get_number_user_scrobbles_stored,
 )
 
 from cmd_data_helpers import get_five_recent_tracks
@@ -96,7 +97,8 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username(ctx.user.id, user)
+        # name: str = get_lfm_username(ctx.user.id, user)
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -104,10 +106,9 @@ class LastFM(commands.Cog):
             )
             return
 
-        user: pylast.User = self.network.get_user(name)
-        await ctx.respond(
-            f"{user.get_name()} has **{user.get_playcount()}** total scrobbles!"
-        )
+        num_scrobbles = get_number_user_scrobbles_stored(ctx.user.id)
+
+        await ctx.respond(f"{name} has **{num_scrobbles}** total scrobbles!")
 
     @has_set_lfm_user()
     @slash_command(name="now", guilds=guilds)
