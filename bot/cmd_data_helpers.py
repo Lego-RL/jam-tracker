@@ -56,7 +56,6 @@ def get_five_recent_tracks(lfm_user: str) -> list[StrippedTrack]:
 
         for track in tracks:
 
-            # with Session.begin() as session:
             user_id_query = (
                 session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
             )
