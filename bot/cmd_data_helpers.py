@@ -6,7 +6,7 @@ from data_interface import Session, User, Scrobble
 class StrippedTrack:
     """
     Custom class to store a track's data, named Stripped
-    because it only hasessential data for the track
+    because it only has essential data for the track
     versus a pylast.Track object.
     """
 
@@ -28,6 +28,18 @@ class StrippedTrack:
 
     def __repr__(self) -> str:
         return f"StrippedTrack({self.title=}, {self.artist=}, {self.album=}, {self.unix_timestamp=}, {self.track_plays=})"
+
+
+class StrippedArtist:
+    """
+    Custom class to store an artist's data, named Stripped
+    because it only has essential data for the artist
+    versus a pylast.Artist object.
+    """
+
+    def __init__(self, artist: str, artist_plays: int):
+        self.artist = artist
+        self.artist_plays = artist_plays
 
 
 def generate_stripped_track(track: Scrobble, track_plays: int) -> StrippedTrack:
@@ -131,3 +143,46 @@ def get_x_top_tracks(lfm_user: str, num_tracks: int) -> list[StrippedTrack]:
             stripped_tracks.append(track_obj)
 
     return stripped_tracks
+
+
+def get_x_top_artists(lfm_user: str, num_artists: int) -> list[StrippedArtist]:
+    """
+    Return top x artists based on number of scrobbles the
+    user has for each artist.
+    """
+
+    stripped_artists: list[StrippedArtist] = []
+    with Session.begin() as session:
+        user_id_query = (
+            session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
+        )
+
+        artists: list[Scrobble] = (
+            session.query(Scrobble)
+            .filter_by(user_id=user_id_query.c.id)
+            .group_by(Scrobble.artist)
+            .order_by(desc(func.count(Scrobble.artist)))
+            .limit(num_artists)
+            .all()
+        )
+
+        if artists is None:
+            return None
+
+        for artist in artists:
+            user_id_query = (
+                session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
+            )
+
+            artist_plays = (
+                session.query(Scrobble)
+                .filter_by(user_id=user_id_query.c.id)
+                .filter_by(artist=artist.artist)
+                .count()
+            )
+
+            artist_obj: StrippedArtist = StrippedArtist(artist.artist, artist_plays)
+
+            stripped_artists.append(artist_obj)
+
+    return stripped_artists
