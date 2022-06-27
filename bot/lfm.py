@@ -25,6 +25,7 @@ from data_interface import (
 )
 
 from cmd_data_helpers import get_five_recent_tracks
+from image import get_dominant_color
 
 guilds = [315782312476409867, 938179110558105672, 957732024859365466]
 
@@ -553,6 +554,30 @@ class LastFM(commands.Cog):
         await ctx.respond(
             f"Successfully set the profile picture!\n`{first_result.get_name()} by {first_result.get_artist()}`"
         )
+
+    @has_set_lfm_user()
+    @slash_command(
+        name="color", description="Get the dominant color of an album's cover art."
+    )
+    async def test_get_dom_color(self, ctx: ApplicationContext, album: str) -> None:
+        """
+        Test out getting dominant color from an album cover.
+        """
+
+        await ctx.defer()
+
+        possibilities = pylast.AlbumSearch(album_name=album, network=self.network)
+        first_result: pylast.Album = possibilities.get_next_page()[0]
+
+        image_url = first_result.get_cover_image()
+        rgb: tuple = get_dominant_color(image_url)
+
+        embed = discord.Embed(
+            color=discord.Color.from_rgb(*rgb),
+            title=f"Color for {album} is the embed color.. right now =]",
+        )
+
+        await ctx.respond(embed=embed)
 
     async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
         if isinstance(error, CheckFailure):
