@@ -30,7 +30,24 @@ class StrippedTrack:
         return f"StrippedTrack({self.title=}, {self.artist=}, {self.album=}, {self.unix_timestamp=}, {self.track_plays=})"
 
 
-def get_five_recent_tracks(lfm_user: str) -> list[StrippedTrack]:
+def generate_stripped_track(track: Scrobble, track_plays: int) -> StrippedTrack:
+    """
+    Generate a StrippedTrack object from a Scrobble object.
+    """
+
+    track_obj = StrippedTrack(
+        title=track.title,
+        artist=track.artist,
+        album=track.album,
+        unix_timestamp=track.unix_timestamp,
+        lfm_url=track.lfm_url,
+        track_plays=track_plays,
+    )
+
+    return track_obj
+
+
+def get_x_recent_tracks(lfm_user: str, num_tracks: int) -> list[StrippedTrack]:
     """
     Retrieve the last five tracks scrobbled by a user from
     the database (assumed to be up to date) as StrippedTrack
@@ -47,7 +64,7 @@ def get_five_recent_tracks(lfm_user: str) -> list[StrippedTrack]:
             session.query(Scrobble)
             .order_by(desc(Scrobble.unix_timestamp))
             .filter_by(user_id=user_id_query.c.id)
-            .limit(5)
+            .limit(num_tracks)
             .all()
         )
 
@@ -55,8 +72,6 @@ def get_five_recent_tracks(lfm_user: str) -> list[StrippedTrack]:
             return None
 
         for track in tracks:
-
-            # with Session.begin() as session:
             user_id_query = (
                 session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
             )
@@ -68,19 +83,51 @@ def get_five_recent_tracks(lfm_user: str) -> list[StrippedTrack]:
                 .count()
             )
 
-            track_obj = StrippedTrack(
-                title=track.title,
-                artist=track.artist,
-                album=track.album,
-                unix_timestamp=track.unix_timestamp,
-                lfm_url=track.lfm_url,
-                track_plays=track_plays,
-            )
+            track_obj: StrippedTrack = generate_stripped_track(track, track_plays)
+
             stripped_tracks.append(track_obj)
 
     return stripped_tracks
 
 
-# testing purposes
-if __name__ == "__main__":
-    get_five_recent_tracks("BVeil")
+def get_x_top_tracks(lfm_user: str, num_tracks: int) -> list[StrippedTrack]:
+    """
+    Return top x tracks based on number of scrobbles the
+    user has for each song.
+    """
+
+    stripped_tracks: list[StrippedTrack] = []
+    with Session.begin() as session:
+        user_id_query = (
+            session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
+        )
+
+        tracks: list[Scrobble] = (
+            session.query(Scrobble)
+            .filter_by(user_id=user_id_query.c.id)
+            .group_by(Scrobble.title)
+            .order_by(desc(func.count(Scrobble.title)))
+            .limit(num_tracks)
+            .all()
+        )
+
+        if tracks is None:
+            return None
+
+        for track in tracks:
+            user_id_query = (
+                session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
+            )
+
+            track_plays = (
+                session.query(Scrobble)
+                .filter_by(user_id=user_id_query.c.id)
+                .filter_by(title=track.title)
+                .count()
+            )
+
+            track_obj: StrippedTrack = generate_stripped_track(track, track_plays)
+
+            stripped_tracks.append(track_obj)
+
+    return stripped_tracks
