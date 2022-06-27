@@ -292,6 +292,12 @@ class LastFM(commands.Cog):
             text=f"{user.get_name()} has {user.get_playcount()} total scrobbles!"
         )
 
+        # update embed color if thumbnail is used
+        if image_url := embed.thumbnail.url:
+            rgb: tuple = get_dominant_color(image_url)
+            color = discord.Color.from_rgb(*rgb)
+            embed.color = color
+
         await ctx.respond(embed=embed)
 
     @has_set_lfm_user()
@@ -554,38 +560,6 @@ class LastFM(commands.Cog):
         await ctx.respond(
             f"Successfully set the profile picture!\n`{first_result.get_name()} by {first_result.get_artist()}`"
         )
-
-    @has_set_lfm_user()
-    @slash_command(
-        name="color", description="Get the dominant color of an album's cover art."
-    )
-    async def test_get_dom_color(self, ctx: ApplicationContext, album: str) -> None:
-        """
-        Test out getting dominant color from an album cover.
-        """
-
-        await ctx.defer()
-
-        possibilities = pylast.AlbumSearch(album_name=album, network=self.network)
-        first_result: pylast.Album = possibilities.get_next_page()[0]
-
-        image_url = first_result.get_cover_image()
-        rgb: tuple = get_dominant_color(image_url)
-
-        embed = discord.Embed(
-            color=discord.Color.from_rgb(*rgb),
-            title=f"Color for {album} is the embed color.. right now =]",
-        )
-
-        await ctx.respond(embed=embed)
-
-    async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
-        if isinstance(error, CheckFailure):
-            await ctx.respond(
-                f"{ctx.user.mention}, make sure you have set your last.fm username using `/lfm set [username]`!"
-            )
-        else:
-            print(f"o no, error!\n{error}\n{traceback.format_exc()}")
 
 
 def setup(bot: discord.Bot):
