@@ -172,7 +172,9 @@ def get_x_top_tracks(
     return stripped_tracks
 
 
-def get_x_top_artists(lfm_user: str, num_artists: int) -> list[StrippedArtist]:
+def get_x_top_artists(
+    lfm_user: str, num_artists: int, unix_timestamp: int = None
+) -> list[StrippedArtist]:
     """
     Return top x artists based on number of scrobbles the
     user has for each artist.
@@ -184,14 +186,25 @@ def get_x_top_artists(lfm_user: str, num_artists: int) -> list[StrippedArtist]:
             session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
         )
 
-        artists: list[Scrobble] = (
-            session.query(Scrobble)
-            .filter_by(user_id=user_id_query.c.id)
-            .group_by(Scrobble.artist)
-            .order_by(desc(func.count(Scrobble.artist)))
-            .limit(num_artists)
-            .all()
-        )
+        if unix_timestamp:
+            artists: list[Scrobble] = (
+                session.query(Scrobble)
+                .filter_by(user_id=user_id_query.c.id)
+                .filter(Scrobble.unix_timestamp > unix_timestamp)
+                .group_by(Scrobble.artist)
+                .order_by(desc(func.count(Scrobble.artist)))
+                .limit(num_artists)
+                .all()
+            )
+        else:
+            artists: list[Scrobble] = (
+                session.query(Scrobble)
+                .filter_by(user_id=user_id_query.c.id)
+                .group_by(Scrobble.artist)
+                .order_by(desc(func.count(Scrobble.artist)))
+                .limit(num_artists)
+                .all()
+            )
 
         if artists is None:
             return None
@@ -201,12 +214,22 @@ def get_x_top_artists(lfm_user: str, num_artists: int) -> list[StrippedArtist]:
                 session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
             )
 
-            artist_plays = (
-                session.query(Scrobble)
-                .filter_by(user_id=user_id_query.c.id)
-                .filter_by(artist=artist.artist)
-                .count()
-            )
+            if unix_timestamp:
+
+                artist_plays = (
+                    session.query(Scrobble)
+                    .filter_by(user_id=user_id_query.c.id)
+                    .filter_by(artist=artist.artist)
+                    .filter(Scrobble.unix_timestamp > unix_timestamp)
+                    .count()
+                )
+            else:
+                artist_plays = (
+                    session.query(Scrobble)
+                    .filter_by(user_id=user_id_query.c.id)
+                    .filter_by(artist=artist.artist)
+                    .count()
+                )
 
             artist_obj: StrippedArtist = StrippedArtist(artist.artist, artist_plays)
 

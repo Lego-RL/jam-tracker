@@ -377,7 +377,7 @@ class LastFM(commands.Cog):
         name="period",
         type=str,
         description="Decides the period of time to find your top artists for",
-        choices=["7 days", "1 month", "3 months", "6 months", "12 months", "overall"],
+        choices=CMD_TIME_CHOICES,
         required=False,
         default="overall",
     )
@@ -402,15 +402,15 @@ class LastFM(commands.Cog):
             )
             return
 
-        lfm_period = PERIODS[period]
-
-        embed = discord.Embed(
-            color=discord.Color.gold(),
-            # description=artists_str,
-        )
-
+        embed = discord.Embed(color=discord.Color.gold())
         user: pylast.User = self.network.get_user(name)
-        stripped_artists: list[StrippedArtist] = get_x_top_artists(name, 10)
+
+        lfm_period = PERIODS[period]
+        relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
+
+        stripped_artists: list[StrippedArtist] = get_x_top_artists(
+            name, 10, relative_timestamp
+        )
 
         artists_str: str = str()
 
@@ -490,13 +490,12 @@ class LastFM(commands.Cog):
             )
             return
 
-        lfm_period = PERIODS[period]
-
         embed = discord.Embed(color=discord.Color.gold())
+        user: pylast.User = self.network.get_user(name)
 
+        lfm_period = PERIODS[period]
         relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
 
-        user: pylast.User = self.network.get_user(name)
         stripped_tracks: list[StrippedTrack] = get_x_top_tracks(
             name, 10, relative_timestamp
         )
