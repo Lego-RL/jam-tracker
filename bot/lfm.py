@@ -7,13 +7,16 @@ from discord import ApplicationContext
 from discord.commands import slash_command, SlashCommandGroup, option
 from discord.ext import commands
 
-from discord.errors import CheckFailure
-
 import pylast
 import requests
 
 from cmd_data_helpers import StrippedTrack, StrippedArtist
-from cmd_data_helpers import get_x_recent_tracks, get_x_top_tracks, get_x_top_artists
+from cmd_data_helpers import (
+    get_x_recent_tracks,
+    get_x_top_tracks,
+    get_x_top_artists,
+    get_relative_unix_timestamp,
+)
 from data_interface import (
     store_user,
     retrieve_lfm_username,
@@ -33,6 +36,7 @@ guilds = [
 ]
 
 PERIODS = {
+    "1 day": "1 day",
     "7 days": pylast.PERIOD_7DAYS,
     "1 month": pylast.PERIOD_1MONTH,
     "3 months": pylast.PERIOD_3MONTHS,
@@ -40,6 +44,16 @@ PERIODS = {
     "12 months": pylast.PERIOD_12MONTHS,
     "overall": pylast.PERIOD_OVERALL,
 }
+
+CMD_TIME_CHOICES = [
+    "1 day",
+    "7 days",
+    "1 month",
+    "3 months",
+    "6 months",
+    "12 months",
+    "overall",
+]
 
 BLOB_JAMMIN: str = "<a:blobjammin:988683824860921857>"  # emote
 
@@ -449,7 +463,7 @@ class LastFM(commands.Cog):
         name="period",
         type=str,
         description="Decides the period of time to find your top tracks for",
-        choices=["7 days", "1 month", "3 months", "6 months", "12 months", "overall"],
+        choices=CMD_TIME_CHOICES,
         required=False,
         default="overall",
     )
@@ -476,13 +490,16 @@ class LastFM(commands.Cog):
             )
             return
 
-        # TODO: add proper support again for period by adding parameterto get_x_recent_tracks
         lfm_period = PERIODS[period]
 
         embed = discord.Embed(color=discord.Color.gold())
 
+        relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
+
         user: pylast.User = self.network.get_user(name)
-        stripped_tracks: list[StrippedTrack] = get_x_top_tracks(name, 10)
+        stripped_tracks: list[StrippedTrack] = get_x_top_tracks(
+            name, 10, relative_timestamp
+        )
 
         tracks_str: str = str()
         top_ten_scrobbles: int = 0
