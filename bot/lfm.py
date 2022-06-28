@@ -453,10 +453,15 @@ class LastFM(commands.Cog):
 
         image_url = user.get_image()
 
-        embed.set_author(
-            name=f"{user.get_name()}'s Top 10 Artists ({period})",
-            icon_url=image_url,
-        )
+        if image_url:
+
+            embed.set_author(
+                name=f"{user.get_name()}'s Top 10 Artists ({period})",
+                icon_url=image_url,
+            )
+
+        else:
+            embed.set_author(name=f"{user.get_name()}'s Top 10 Artists ({period})")
 
         # get artist #1's cover image for embed thumbnail
         # update embed color to thumbnail color
@@ -529,10 +534,14 @@ class LastFM(commands.Cog):
         )
 
         image_url = user.get_image()
-        embed.set_author(
-            name=f"{user.get_name()}'s Top 10 Tracks ({period})",
-            icon_url=image_url,
-        )
+
+        if image_url:
+            embed.set_author(
+                name=f"{user.get_name()}'s Top 10 Tracks ({period})",
+                icon_url=image_url,
+            )
+        else:
+            embed.set_author(name=f"{user.get_name()}'s Top 10 Tracks ({period})")
 
         # get track #1's cover image for embed thumbnail
         # update embed color to thumbnail color
@@ -595,7 +604,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # limit where command can be used
-        approved_guilds = [938179110558105672, 315782312476409867]
+        approved_guilds = [938179110558105672, 315782312476409867, 108262903802511360]
 
         if ctx.guild_id not in approved_guilds:
             await ctx.respond(
