@@ -27,3 +27,29 @@ def get_artist_image_url(artist: str) -> str:
     except Exception:
         traceback.print_exc()
         return None
+
+
+def get_track_image_url(track: str, artist: str) -> str:
+    """
+    Returns the track's image URL, retrieved from Spotify.
+    """
+
+    try:
+        if artist:
+            query: str = f"track:{track} artist:{artist}"
+
+        else:
+            query: str = f"track:{track}"
+
+        search_info: dict = client.search(q=query, limit=1, type="track")
+        track_info: dict = search_info["tracks"]["items"][0]
+
+        return track_info["album"]["images"][0]["url"]
+
+    except Exception:
+        traceback.print_exc()
+        return None
+
+
+if __name__ == "__main__":
+    print(get_track_image_url("Hot Tea", "half alive"))

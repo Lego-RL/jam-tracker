@@ -23,7 +23,7 @@ from data_interface import (
 )
 from image import get_dominant_color, update_embed_color
 from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
-from spotify import get_artist_image_url
+from spotify import get_artist_image_url, get_track_image_url
 
 guilds = [315782312476409867, 938179110558105672, 957732024859365466]
 
@@ -494,6 +494,8 @@ class LastFM(commands.Cog):
         # TODO: add proper support again for period by adding parameterto get_x_recent_tracks
         lfm_period = PERIODS[period]
 
+        embed = discord.Embed(color=discord.Color.gold())
+
         user: pylast.User = self.network.get_user(name)
         stripped_tracks: list[StrippedTrack] = get_x_top_tracks(name, 10)
 
@@ -501,12 +503,17 @@ class LastFM(commands.Cog):
         top_ten_scrobbles: int = 0
         for i, track in enumerate(stripped_tracks):
             top_ten_scrobbles += track.track_plays
+
+            if i == 0:
+                track_image_url = get_track_image_url(track.title, track.artist)
+
+                if track_image_url:
+                    embed.set_thumbnail(url=track_image_url)
+                    embed = update_embed_color(embed)
+
             tracks_str += f"\n{i+1}) [{track.title}]({track.lfm_url}) - **{track.track_plays}** scrobbles"
 
-        embed = discord.Embed(
-            color=discord.Color.gold(),
-            description=tracks_str,
-        )
+        embed.description = tracks_str
 
         percent_scrobbles = (
             top_ten_scrobbles / get_number_user_scrobbles_stored(discord_id)
