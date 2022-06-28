@@ -246,20 +246,18 @@ def get_relative_unix_timestamp(period: str) -> int:
 
     delta: datetime.timedelta = None
 
-    match period:
-
-        case "1 day":
-            delta = datetime.timedelta(days=1)
-        case pylast.PERIOD_7DAYS:
-            delta = datetime.timedelta(days=7)
-        case pylast.PERIOD_1MONTH:
-            delta = datetime.timedelta(weeks=4)
-        case pylast.PERIOD_3MONTHS:
-            delta = datetime.timedelta(weeks=12)
-        case pylast.PERIOD_12MONTHS:
-            delta = datetime.timedelta(weeks=52)
-        case _:
-            delta = None
+    if period == "1 day":
+        delta = datetime.timedelta(days=1)
+    elif period == pylast.PERIOD_7DAYS:
+        delta = datetime.timedelta(days=7)
+    elif period == pylast.PERIOD_1MONTH:
+        delta = datetime.timedelta(weeks=4)
+    elif period == pylast.PERIOD_3MONTHS:
+        delta = datetime.timedelta(weeks=12)
+    elif period == pylast.PERIOD_12MONTHS:
+        delta = datetime.timedelta(weeks=52)
+    else:
+        delta = None
 
     if delta is None:
         return None
