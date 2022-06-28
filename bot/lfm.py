@@ -25,7 +25,12 @@ from image import get_dominant_color, update_embed_color
 from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
 from spotify import get_artist_image_url, get_track_image_url
 
-guilds = [315782312476409867, 938179110558105672, 957732024859365466]
+guilds = [
+    315782312476409867,
+    938179110558105672,
+    957732024859365466,
+    108262903802511360,
+]
 
 PERIODS = {
     "7 days": pylast.PERIOD_7DAYS,
