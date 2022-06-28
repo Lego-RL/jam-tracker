@@ -11,11 +11,9 @@ from discord.errors import CheckFailure
 
 import pylast
 import requests
-from cmd_data_helpers import StrippedTrack
 
-
-from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
-
+from cmd_data_helpers import StrippedTrack, StrippedArtist
+from cmd_data_helpers import get_x_recent_tracks, get_x_top_tracks, get_x_top_artists
 from data_interface import (
     store_user,
     retrieve_lfm_username,
@@ -23,9 +21,9 @@ from data_interface import (
     get_lfm_username_update_data,
     get_number_user_scrobbles_stored,
 )
-
-from cmd_data_helpers import get_five_recent_tracks
-from image import get_dominant_color
+from image import get_dominant_color, update_embed_color
+from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
+from spotify import get_artist_image_url
 
 guilds = [315782312476409867, 938179110558105672, 957732024859365466]
 
@@ -221,7 +219,7 @@ class LastFM(commands.Cog):
             )
             return
 
-        stripped_tracks: list[StrippedTrack] = get_five_recent_tracks(name)
+        stripped_tracks: list[StrippedTrack] = get_x_recent_tracks(name, 5)
 
         user: pylast.User = self.network.get_user(name)
 
@@ -291,12 +289,7 @@ class LastFM(commands.Cog):
         embed.set_footer(
             text=f"{user.get_name()} has {user.get_playcount()} total scrobbles!"
         )
-
-        # update embed color if thumbnail is used
-        if image_url := embed.thumbnail.url:
-            rgb: tuple = get_dominant_color(image_url)
-            color = discord.Color.from_rgb(*rgb)
-            embed.color = color
+        embed = update_embed_color(embed)
 
         await ctx.respond(embed=embed)
 
@@ -406,7 +399,8 @@ class LastFM(commands.Cog):
         """
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username(ctx.user.id, user)
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
             await ctx.respond(
@@ -416,40 +410,51 @@ class LastFM(commands.Cog):
 
         lfm_period = PERIODS[period]
 
-        user: pylast.User = self.network.get_user(name)
-        fav_artists: list[pylast.TopItem] = user.get_top_artists(
-            period=lfm_period, limit=10
+        embed = discord.Embed(
+            color=discord.Color.gold(),
+            # description=artists_str,
         )
+
+        user: pylast.User = self.network.get_user(name)
+        stripped_artists: list[StrippedArtist] = get_x_top_artists(name, 10)
 
         artists_str: str = str()
 
         top_ten_scrobbles: int = 0
-        for i in range(10):
-            top_ten_scrobbles += int(fav_artists[i].weight)
-            artists_str += f"\n{i+1}) [{fav_artists[i].item.name}]({fav_artists[i].item.get_url()}) - **{fav_artists[i].weight}** scrobbles"
+        for i, artist in enumerate(stripped_artists):
+            top_ten_scrobbles += int(artist.artist_plays)
 
-        embed = discord.Embed(
-            # title=f"{user.get_name()}'s Top 10 Artists ({period})",
-            color=discord.Color.gold(),
-            description=artists_str,
-        )
+            if i == 0:
+                artist_image_url: str = get_artist_image_url(artist.artist)
 
-        percent_scrobbles = (top_ten_scrobbles / user.get_playcount()) * 100
+                if artist_image_url:
+                    embed.set_thumbnail(url=artist_image_url)
+                    embed = update_embed_color(embed)
+
+            artist_link = (
+                f"https://www.last.fm/music/{'+'.join(artist.artist.split(' '))}"
+            )
+            artists_str += f"\n{i+1}) [{artist.artist}]({artist_link}) - **{artist.artist_plays}** scrobbles"
+
+        embed.description = artists_str
+
+        percent_scrobbles = (
+            top_ten_scrobbles / get_number_user_scrobbles_stored(discord_id)
+        ) * 100
 
         embed.set_footer(
-            text=f"These artists make up {percent_scrobbles:0.2f}% of {user.get_name()}'s total scrobbles!"
+            text=f"These artists make up {percent_scrobbles:0.2f}% of {name}'s total scrobbles!"
         )
 
         image_url = user.get_image()
 
-        if image_url:
-            embed.set_author(
-                name=f"{user.get_name()}'s Top 10 Artists ({period})",
-                icon_url=image_url,
-            )
+        embed.set_author(
+            name=f"{user.get_name()}'s Top 10 Artists ({period})",
+            icon_url=image_url,
+        )
 
-        else:
-            embed.set_author(name=f"{user.get_name()}'s Top 10 Artists ({period})")
+        # get artist #1's cover image for embed thumbnail
+        # update embed color to thumbnail color
 
         await ctx.respond(embed=embed)
 
@@ -477,7 +482,8 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username(ctx.user.id, user)  # must pass network
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
             await ctx.respond(
@@ -485,49 +491,84 @@ class LastFM(commands.Cog):
             )
             return
 
+        # TODO: add proper support again for period by adding parameterto get_x_recent_tracks
         lfm_period = PERIODS[period]
 
         user: pylast.User = self.network.get_user(name)
-        fav_tracks: list[pylast.TopItem] = user.get_top_tracks(
-            period=lfm_period, limit=10
-        )
+        stripped_tracks: list[StrippedTrack] = get_x_top_tracks(name, 10)
 
         tracks_str: str = str()
         top_ten_scrobbles: int = 0
-        for i in range(10):
-            top_ten_scrobbles += fav_tracks[i].weight
-            tracks_str += f"\n{i+1}) [{fav_tracks[i].item.get_name()}]({fav_tracks[i].item.get_url()}) - **{fav_tracks[i].weight}** scrobbles"
+        for i, track in enumerate(stripped_tracks):
+            top_ten_scrobbles += track.track_plays
+            tracks_str += f"\n{i+1}) [{track.title}]({track.lfm_url}) - **{track.track_plays}** scrobbles"
 
         embed = discord.Embed(
             color=discord.Color.gold(),
             description=tracks_str,
         )
 
-        percent_scrobbles = (top_ten_scrobbles / user.get_playcount()) * 100
+        percent_scrobbles = (
+            top_ten_scrobbles / get_number_user_scrobbles_stored(discord_id)
+        ) * 100
 
         embed.set_footer(
-            text=f"These tracks make up {percent_scrobbles:0.2f}% of {user.get_name()}'s total scrobbles!"
+            text=f"These tracks make up {percent_scrobbles:0.2f}% of {name}'s total scrobbles!"
         )
 
         image_url = user.get_image()
+        embed.set_author(
+            name=f"{user.get_name()}'s Top 10 Tracks ({period})",
+            icon_url=image_url,
+        )
 
-        if image_url:
-            embed.set_author(
-                name=f"{user.get_name()}'s Top 10 Tracks ({period})",
-                icon_url=image_url,
-            )
-
-        else:
-            embed.set_author(name=f"{user.get_name()}'s Top 10 Tracks ({period})")
-
-        try:
-            if cover_img := fav_tracks[0].item.get_cover_image():
-                embed.set_thumbnail(url=cover_img)
-
-        except IndexError:
-            pass
+        # get track #1's cover image for embed thumbnail
+        # update embed color to thumbnail color
 
         await ctx.respond(embed=embed)
+
+    # @has_set_lfm_user()
+    # @slash_command(name="track", description="See info about a single track.")
+    # async def track_info(self, ctx: ApplicationContext, track: str) -> None:
+    #     """
+    #     Display info about a single track.
+    #     """
+
+    #     # if user supplied, set lfm_user to their last.fm username & return if they have none set
+    #     name: str = get_lfm_username_update_data(self.network, ctx.user.id)
+
+    #     if name is None:
+    #         await ctx.respond(
+    #             f"{ctx.user.mention}, this user does not have a last.fm username set!"
+    #         )
+    #         return
+
+    #     user: pylast.User = self.network.get_user(name)
+
+    #     # AI wrote the rest from here, needs fixing up
+    #     track_info = get_track_info(name, track)
+
+    #     if track_info is None:
+    #         await ctx.respond(
+    #             f"{ctx.user.mention}, I couldn't find that track on last.fm!"
+    #         )
+    #         return
+
+    #     embed = discord.Embed(
+    #         color=discord.Color.gold(),
+    #         description=track_info.description,
+    #     )
+
+    #     embed.set_author(
+    #         name=f"{track_info.title} - {track_info.artist}",
+    #         icon_url=track_info.image_url,
+    #     )
+
+    #     embed.set_thumbnail(url=track_info.image_url)
+
+    #     embed.set_footer(text=f"{track_info.plays} scrobbles on last.fm!")
+
+    #     await ctx.respond(embed=embed)
 
     @pfp.command(
         name="update",
