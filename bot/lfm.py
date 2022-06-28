@@ -12,8 +12,8 @@ from discord.errors import CheckFailure
 import pylast
 import requests
 
-from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
 from cmd_data_helpers import StrippedTrack, StrippedArtist
+from cmd_data_helpers import get_x_recent_tracks, get_x_top_tracks, get_x_top_artists
 from data_interface import (
     store_user,
     retrieve_lfm_username,
@@ -21,8 +21,9 @@ from data_interface import (
     get_lfm_username_update_data,
     get_number_user_scrobbles_stored,
 )
-from cmd_data_helpers import get_x_recent_tracks, get_x_top_tracks, get_x_top_artists
-from image import get_dominant_color
+from image import get_dominant_color, update_embed_color
+from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
+from spotify import get_artist_image_url
 
 guilds = [315782312476409867, 938179110558105672, 957732024859365466]
 
@@ -288,12 +289,7 @@ class LastFM(commands.Cog):
         embed.set_footer(
             text=f"{user.get_name()} has {user.get_playcount()} total scrobbles!"
         )
-
-        # update embed color if thumbnail is used
-        if image_url := embed.thumbnail.url:
-            rgb: tuple = get_dominant_color(image_url)
-            color = discord.Color.from_rgb(*rgb)
-            embed.color = color
+        embed = update_embed_color(embed)
 
         await ctx.respond(embed=embed)
 
@@ -414,8 +410,12 @@ class LastFM(commands.Cog):
 
         lfm_period = PERIODS[period]
 
-        user: pylast.User = self.network.get_user(name)
+        embed = discord.Embed(
+            color=discord.Color.gold(),
+            # description=artists_str,
+        )
 
+        user: pylast.User = self.network.get_user(name)
         stripped_artists: list[StrippedArtist] = get_x_top_artists(name, 10)
 
         artists_str: str = str()
@@ -424,15 +424,19 @@ class LastFM(commands.Cog):
         for i, artist in enumerate(stripped_artists):
             top_ten_scrobbles += int(artist.artist_plays)
 
+            if i == 0:
+                artist_image_url: str = get_artist_image_url(artist.artist)
+
+                if artist_image_url:
+                    embed.set_thumbnail(url=artist_image_url)
+                    embed = update_embed_color(embed)
+
             artist_link = (
                 f"https://www.last.fm/music/{'+'.join(artist.artist.split(' '))}"
             )
             artists_str += f"\n{i+1}) [{artist.artist}]({artist_link}) - **{artist.artist_plays}** scrobbles"
 
-        embed = discord.Embed(
-            color=discord.Color.gold(),
-            description=artists_str,
-        )
+        embed.description = artists_str
 
         percent_scrobbles = (
             top_ten_scrobbles / get_number_user_scrobbles_stored(discord_id)
@@ -522,6 +526,49 @@ class LastFM(commands.Cog):
         # update embed color to thumbnail color
 
         await ctx.respond(embed=embed)
+
+    # @has_set_lfm_user()
+    # @slash_command(name="track", description="See info about a single track.")
+    # async def track_info(self, ctx: ApplicationContext, track: str) -> None:
+    #     """
+    #     Display info about a single track.
+    #     """
+
+    #     # if user supplied, set lfm_user to their last.fm username & return if they have none set
+    #     name: str = get_lfm_username_update_data(self.network, ctx.user.id)
+
+    #     if name is None:
+    #         await ctx.respond(
+    #             f"{ctx.user.mention}, this user does not have a last.fm username set!"
+    #         )
+    #         return
+
+    #     user: pylast.User = self.network.get_user(name)
+
+    #     # AI wrote the rest from here, needs fixing up
+    #     track_info = get_track_info(name, track)
+
+    #     if track_info is None:
+    #         await ctx.respond(
+    #             f"{ctx.user.mention}, I couldn't find that track on last.fm!"
+    #         )
+    #         return
+
+    #     embed = discord.Embed(
+    #         color=discord.Color.gold(),
+    #         description=track_info.description,
+    #     )
+
+    #     embed.set_author(
+    #         name=f"{track_info.title} - {track_info.artist}",
+    #         icon_url=track_info.image_url,
+    #     )
+
+    #     embed.set_thumbnail(url=track_info.image_url)
+
+    #     embed.set_footer(text=f"{track_info.plays} scrobbles on last.fm!")
+
+    #     await ctx.respond(embed=embed)
 
     @pfp.command(
         name="update",

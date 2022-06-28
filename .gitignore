@@ -4,3 +4,4 @@
 .env
 test.ipynb
 user_scrobble_data.db
+.cache
