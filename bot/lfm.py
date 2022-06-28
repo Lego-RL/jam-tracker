@@ -595,6 +595,7 @@ class LastFM(commands.Cog):
         name="update",
         description="Update the bot's profile picture to album art of your choice! Approved users only.",
     )
+    @commands.cooldown(1, (60 * 10), commands.BucketType.default)
     async def pfp_change(self, ctx: ApplicationContext, album: str) -> None:
         """
         Update bot's profile picture to cover art of the given
