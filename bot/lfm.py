@@ -171,7 +171,11 @@ class LastFM(commands.Cog):
         except pylast.WSError as e:  # occurs sometimes when can't get track playcount? look more in depth later
             print(f"Error, likely due to failed retrieving track.get_userplaycount()")
 
-        embed.set_thumbnail(url=track.get_cover_image())
+        track_image_url = track.get_cover_image()
+
+        if track_image_url:
+            embed.set_thumbnail(url=track_image_url)
+            embed = update_embed_color(embed)
 
         await ctx.respond(embed=embed)
 
@@ -619,7 +623,14 @@ class LastFM(commands.Cog):
         item_art_url = first_result.get_cover_image()
         item_art = requests.get(item_art_url).content
 
-        await self.bot.user.edit(avatar=item_art)
+        try:
+            await self.bot.user.edit(avatar=item_art)
+
+        except:
+            # for when discord's rate limit kicks in - shouldn't happen with the cmd cooldown
+            await ctx.respond("Updated profile picture too recently! Try again soon.")
+            return
+
         await ctx.respond(
             f"Successfully set the profile picture!\n`{first_result.get_name()} by {first_result.get_artist()}`"
         )
