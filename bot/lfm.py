@@ -180,35 +180,6 @@ class LastFM(commands.Cog):
         await ctx.respond(embed=embed)
 
     @has_set_lfm_user()
-    @slash_command(name="last", guilds=guilds)
-    async def last_listened(
-        self, ctx: ApplicationContext, user: discord.User = None
-    ) -> None:
-        """
-        Displays the last song listened to. Supply name with last.fm account
-        you want to use.
-        """
-
-        await ctx.defer()
-
-        # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username(ctx.user.id, user)
-
-        if name is None:
-            await ctx.respond(
-                f"{ctx.user.mention}, this user does not have a last.fm username set!"
-            )
-            return
-
-        track: list[pylast.PlayedTrack] = self.network.get_user(name).get_recent_tracks(
-            1
-        )
-
-        await ctx.respond(
-            f"Last track played was **{track[0].track.title}** by {track[0].track.artist}!"
-        )
-
-    @has_set_lfm_user()
     @slash_command(name="recent", guilds=guilds)
     async def recent_tracks(
         self, ctx: ApplicationContext, user: discord.User = None
