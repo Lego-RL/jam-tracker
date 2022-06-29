@@ -7,6 +7,8 @@ from discord import ApplicationContext
 from discord.commands import slash_command, SlashCommandGroup, option
 from discord.ext import commands
 
+from discord import CheckFailure
+
 import pylast
 import requests
 
@@ -454,9 +456,6 @@ class LastFM(commands.Cog):
         else:
             embed.set_author(name=f"{user.get_name()}'s Top 10 Artists ({period})")
 
-        # get artist #1's cover image for embed thumbnail
-        # update embed color to thumbnail color
-
         await ctx.respond(embed=embed)
 
     @has_set_lfm_user()
@@ -623,6 +622,14 @@ class LastFM(commands.Cog):
         await ctx.respond(
             f"Successfully set the profile picture!\n`{first_result.get_name()} by {first_result.get_artist()}`"
         )
+
+    async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
+        if isinstance(error, CheckFailure):
+            await ctx.respond(
+                f"{ctx.user.mention}, make sure you have set your last.fm username using `/lfm set [username]`!"
+            )
+        else:
+            print(f"o no, error!\n{error}\n{traceback.format_exc()}")
 
 
 def setup(bot: discord.Bot):
