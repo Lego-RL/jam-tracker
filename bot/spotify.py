@@ -2,6 +2,7 @@
 
 import traceback
 
+import urllib3
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -41,7 +42,14 @@ def get_track_image_url(track: str, artist: str) -> str:
         else:
             query: str = f"track:{track}"
 
-        search_info: dict = client.search(q=query, limit=1, type="track")
+        try:
+            search_info: dict = client.search(q=query, limit=1, type="track")
+
+        except urllib3.exceptions.HTTPError:
+
+            # sometimes urllib3 errors for no reason, best solution was to try once more?
+            search_info: dict = client.search(q=query, limit=1, type="track")
+
         track_info: dict = search_info["tracks"]["items"][0]
 
         return track_info["album"]["images"][0]["url"]
@@ -51,5 +59,34 @@ def get_track_image_url(track: str, artist: str) -> str:
         return None
 
 
+def get_track_info(track: str, artist: str = None) -> tuple:
+    """
+    Returns the track's title, album, and cover art url retrieved
+    from Spotify.
+    """
+
+    try:
+        if artist:
+            query: str = f"track:{track} artist:{artist}"
+
+        else:
+            query: str = f"track:{track}"
+
+        search_info: dict = client.search(q=query, limit=1, type="track")
+        track_dict = search_info["tracks"]["items"][0]
+        track_title: str = track_dict["name"]
+        track_album: str = track_dict["album"]["name"]
+        track_image_url = track_dict["album"]["images"][0]["url"]
+
+        return (track_title, track_album, track_image_url)
+
+    except IndexError:
+        return None
+
+    except Exception:
+        traceback.print_exc()
+        return None
+
+
 if __name__ == "__main__":
-    print(get_track_image_url("Hot Tea", "half alive"))
+    print(get_track_info("the tradition", "halsey"))

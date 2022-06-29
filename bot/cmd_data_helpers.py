@@ -1,3 +1,4 @@
+from typing import Union
 import datetime
 
 import pylast
@@ -5,6 +6,7 @@ from sqlalchemy import func, asc, desc
 
 
 from data_interface import Session, User, Scrobble
+from spotify import get_track_info
 
 
 class StrippedTrack:
@@ -61,6 +63,59 @@ def generate_stripped_track(track: Scrobble, track_plays: int) -> StrippedTrack:
     )
 
     return track_obj
+
+
+def get_single_track_info(
+    discord_id: int,
+    track_title: str,
+    track_artist: str = None,
+    unix_timestamp: int = None,
+) -> tuple:
+    """
+    Generates a StrippedTrack obj from info in the database
+    on a singular track. Returns a tuple of the StrippedTrack
+    and a url string to an image of the track's cover art.
+    """
+
+    # retrieving title and album from spotify so that
+    # they should match in the database
+
+    # TODO: make use of album in query
+    title, album, image_url = get_track_info(track_title, track_artist)
+
+    if title is None:
+        return None
+
+    with Session.begin() as session:
+        user_id_query = (
+            session.query(User.id).filter_by(discord_id=discord_id).subquery()
+        )
+
+        if unix_timestamp:
+            track_and_playcount: Scrobble = (
+                session.query(Scrobble, func.count(Scrobble.title).label("playcount"))
+                .filter_by(user_id=user_id_query.c.id)
+                .filter(Scrobble.unix_timestamp > unix_timestamp)
+                .filter_by(title=title)
+                .one()
+            )
+
+        else:
+            track_and_playcount: Scrobble = (
+                session.query(Scrobble, func.count(Scrobble.title).label("playcount"))
+                .filter_by(user_id=user_id_query.c.id)
+                .filter_by(title=title)
+                .one()
+            )
+
+        scrobble, track_plays = track_and_playcount
+
+        # change return value to a dictionary and use .get() in calling method
+        # if scrobble is None:
+        #     return (None, None, image_url)
+
+        stripped_track: StrippedTrack = generate_stripped_track(scrobble, track_plays)
+        return (stripped_track, track_plays, image_url)
 
 
 def get_x_recent_tracks(lfm_user: str, num_tracks: int) -> list[StrippedTrack]:

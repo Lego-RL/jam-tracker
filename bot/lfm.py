@@ -1,6 +1,5 @@
 import traceback
 
-
 import discord
 import discord.commands
 from discord import ApplicationContext
@@ -8,17 +7,11 @@ from discord.commands import slash_command, SlashCommandGroup, option
 from discord.ext import commands
 
 from discord import CheckFailure
+from discord.ext.commands.errors import CommandOnCooldown
 
 import pylast
 import requests
 
-from cmd_data_helpers import StrippedTrack, StrippedArtist
-from cmd_data_helpers import (
-    get_x_recent_tracks,
-    get_x_top_tracks,
-    get_x_top_artists,
-    get_relative_unix_timestamp,
-)
 from data_interface import (
     store_user,
     retrieve_lfm_username,
@@ -26,9 +19,18 @@ from data_interface import (
     get_lfm_username_update_data,
     get_number_user_scrobbles_stored,
 )
-from image import get_dominant_color, update_embed_color
-from main import LFM_API_KEY, LFM_API_SECRET, LFM_USER, LFM_PASS
+from image import update_embed_color
+from main import LFM_API_KEY, LFM_API_SECRET
 from spotify import get_artist_image_url, get_track_image_url
+
+from cmd_data_helpers import StrippedTrack, StrippedArtist
+from cmd_data_helpers import (
+    get_x_recent_tracks,
+    get_x_top_tracks,
+    get_x_top_artists,
+    get_relative_unix_timestamp,
+    get_single_track_info,
+)
 
 guilds = [
     315782312476409867,
@@ -47,15 +49,7 @@ PERIODS = {
     "overall": pylast.PERIOD_OVERALL,
 }
 
-CMD_TIME_CHOICES = [
-    "1 day",
-    "7 days",
-    "1 month",
-    "3 months",
-    "6 months",
-    "12 months",
-    "overall",
-]
+CMD_TIME_CHOICES = list(PERIODS.keys())
 
 BLOB_JAMMIN: str = "<a:blobjammin:988683824860921857>"  # emote
 
@@ -82,8 +76,6 @@ class LastFM(commands.Cog):
         self.network = pylast.LastFMNetwork(
             api_key=LFM_API_KEY,
             api_secret=LFM_API_SECRET,
-            # username=LFM_USER,
-            # password_hash=LFM_PASS,
         )
 
     lfm = SlashCommandGroup(
@@ -116,8 +108,6 @@ class LastFM(commands.Cog):
 
         await ctx.defer()
 
-        # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        # name: str = get_lfm_username(ctx.user.id, user)
         name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
 
         if name is None:
@@ -535,53 +525,78 @@ class LastFM(commands.Cog):
         else:
             embed.set_author(name=f"{user.get_name()}'s Top 10 Tracks ({period})")
 
-        # get track #1's cover image for embed thumbnail
-        # update embed color to thumbnail color
-
         await ctx.respond(embed=embed)
 
-    # @has_set_lfm_user()
-    # @slash_command(name="track", description="See info about a single track.")
-    # async def track_info(self, ctx: ApplicationContext, track: str) -> None:
-    #     """
-    #     Display info about a single track.
-    #     """
+    @has_set_lfm_user()
+    @slash_command(name="track", description="See info about a single track.")
+    async def track_info(
+        self,
+        ctx: ApplicationContext,
+        track_title: str,
+        track_artist: str = None,
+        user: discord.User = None,
+    ) -> None:
+        """
+        Display info about a single track.
+        """
 
-    #     # if user supplied, set lfm_user to their last.fm username & return if they have none set
-    #     name: str = get_lfm_username_update_data(self.network, ctx.user.id)
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id)
+        discord_id = ctx.user.id if user is None else user.id
 
-    #     if name is None:
-    #         await ctx.respond(
-    #             f"{ctx.user.mention}, this user does not have a last.fm username set!"
-    #         )
-    #         return
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
 
-    #     user: pylast.User = self.network.get_user(name)
+        track_data = get_single_track_info(discord_id, track_title, track_artist)
 
-    #     # AI wrote the rest from here, needs fixing up
-    #     track_info = get_track_info(name, track)
+        if track_data is None:
+            await ctx.respond("Unable to find track!")
 
-    #     if track_info is None:
-    #         await ctx.respond(
-    #             f"{ctx.user.mention}, I couldn't find that track on last.fm!"
-    #         )
-    #         return
+        try:
+            stripped_track: StrippedTrack = track_data[0]
+            track_plays: int = track_data[1]
+            image_url: str = track_data[2]
 
-    #     embed = discord.Embed(
-    #         color=discord.Color.gold(),
-    #         description=track_info.description,
-    #     )
+        except IndexError:
+            await ctx.respond("Unable to find track!")
+            return
 
-    #     embed.set_author(
-    #         name=f"{track_info.title} - {track_info.artist}",
-    #         icon_url=track_info.image_url,
-    #     )
+        user: pylast.User = self.network.get_user(name)
 
-    #     embed.set_thumbnail(url=track_info.image_url)
+        embed = discord.Embed(
+            color=discord.Color.gold(),
+            # description=track_info.description,
+        )
 
-    #     embed.set_footer(text=f"{track_info.plays} scrobbles on last.fm!")
+        user_image = user.get_image()
 
-    #     await ctx.respond(embed=embed)
+        if user_image:
+            embed.set_author(
+                name=f"Track info | {stripped_track.artist} - **{stripped_track.title}**",
+                icon_url=user_image,
+            )
+
+        else:
+            embed.set_author(
+                name=f"Track info | {stripped_track.artist} - {stripped_track.title}"
+            )
+
+        if image_url:
+            embed.set_thumbnail(url=image_url)
+            embed = update_embed_color(embed)
+
+        desc_str = f"""__Your data__:
+        
+        Total plays: {track_plays}
+        
+        """
+
+        embed.description = desc_str
+
+        await ctx.respond(embed=embed)
 
     @pfp.command(
         name="update",
@@ -628,6 +643,12 @@ class LastFM(commands.Cog):
             await ctx.respond(
                 f"{ctx.user.mention}, make sure you have set your last.fm username using `/lfm set [username]`!"
             )
+
+        elif isinstance(error, CommandOnCooldown):
+            await ctx.respond(
+                f"{ctx.user.mention}, this command is on cooldown! Try again in {int(error.retry_after)} seconds."
+            )
+
         else:
             print(f"o no, error!\n{error}\n{traceback.format_exc()}")
 
