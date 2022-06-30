@@ -30,6 +30,7 @@ from cmd_data_helpers import (
     get_x_top_artists,
     get_relative_unix_timestamp,
     get_single_track_info,
+    get_discord_relative_timestamp,
 )
 
 guilds = [
@@ -645,8 +646,13 @@ class LastFM(commands.Cog):
             )
 
         elif isinstance(error, CommandOnCooldown):
+            # error.retry_after represents how many seconds until command can be used again
+            disc_relative_timestamp: str = get_discord_relative_timestamp(
+                int(error.retry_after)
+            )
+
             await ctx.respond(
-                f"{ctx.user.mention}, this command is on cooldown! Try again in {int(error.retry_after)} seconds."
+                f"{ctx.user.mention}, this command is on cooldown! Try again after {disc_relative_timestamp}."
             )
 
         else:

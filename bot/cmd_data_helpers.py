@@ -318,3 +318,17 @@ def get_relative_unix_timestamp(period: str) -> int:
         return None
 
     return int((datetime.datetime.now() - delta).timestamp())
+
+
+def get_discord_relative_timestamp(seconds: int) -> str:
+    """
+    Takes amount of seconds and returns a string representing a
+    discord relative timestamp.
+    """
+
+    now: datetime.datetime() = datetime.datetime.now()
+    delta: datetime.timedelta = datetime.timedelta(seconds=seconds)
+
+    unix_timestamp = int((now + delta).timestamp())
+
+    return f"<t:{unix_timestamp}>"
