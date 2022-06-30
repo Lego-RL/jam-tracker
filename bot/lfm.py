@@ -208,6 +208,10 @@ class LastFM(commands.Cog):
 
         stripped_tracks: list[StrippedTrack] = get_x_recent_tracks(name, 5)
 
+        if len(stripped_tracks) == 0:
+            await ctx.respond(f"{ctx.user.mention}, this user has no scrobbled tracks!")
+            return
+
         user: pylast.User = self.network.get_user(name)
 
         now_playing: pylast.Track = user.get_now_playing()
@@ -407,6 +411,12 @@ class LastFM(commands.Cog):
             name, 10, relative_timestamp
         )
 
+        if len(stripped_artists) == 0:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user has no scrobbles over the period of **{period}**!"
+            )
+            return
+
         artists_str: str = str()
 
         top_ten_scrobbles: int = 0
@@ -492,6 +502,12 @@ class LastFM(commands.Cog):
             name, 10, relative_timestamp
         )
 
+        if len(stripped_tracks) == 0:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user has no scrobbles over the period of **{period}**!"
+            )
+            return
+
         tracks_str: str = str()
         top_ten_scrobbles: int = 0
         for i, track in enumerate(stripped_tracks):
@@ -554,7 +570,8 @@ class LastFM(commands.Cog):
         track_data = get_single_track_info(discord_id, track_title, track_artist)
 
         if track_data is None:
-            await ctx.respond("Unable to find track!")
+            await ctx.respond(f"{ctx.user.mention}, unable to find given track!")
+            return
 
         try:
             stripped_track: StrippedTrack = track_data[0]
