@@ -81,7 +81,11 @@ def get_single_track_info(
     # they should match in the database
 
     # TODO: make use of album in query
-    title, album, image_url = get_track_info(track_title, track_artist)
+    try:
+        title, album, image_url = get_track_info(track_title, track_artist)
+
+    except TypeError:
+        return None
 
     if title is None:
         return None
