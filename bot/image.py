@@ -1,4 +1,5 @@
 from io import BytesIO
+from math import sqrt
 
 import discord
 from PIL import Image
@@ -34,3 +35,22 @@ def update_embed_color(embed: discord.Embed) -> discord.Embed:
 
     # if no updates embed will return unchanged
     return embed
+
+
+def combine_images(image_urls: list[str]) -> Image:
+    """
+    Take a list of image URLs and return a combined image.
+    Number of images given should always be a perfect square.
+    """
+
+    row_col_size = int(sqrt(len(image_urls)))
+
+    images = [requests.get(url).content for url in image_urls]
+    images = [Image.open(BytesIO(image)) for image in images]
+
+    w, h = images[0].size
+    grid = Image.new("RGB", size=(row_col_size * w, row_col_size * h))
+
+    for i, img in enumerate(images):
+        grid.paste(img, box=(i % row_col_size * w, i // row_col_size * h))
+    return grid

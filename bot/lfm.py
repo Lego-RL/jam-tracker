@@ -19,9 +19,11 @@ from data_interface import (
     get_lfm_username_update_data,
     get_number_user_scrobbles_stored,
 )
-from image import update_embed_color
+from image import combine_images, update_embed_color
+from io import BytesIO
 from main import LFM_API_KEY, LFM_API_SECRET
 from spotify import get_artist_image_url, get_track_image_url
+from PIL import Image
 
 from cmd_data_helpers import StrippedTrack, StrippedArtist
 from cmd_data_helpers import (
@@ -89,6 +91,13 @@ class LastFM(commands.Cog):
     top = SlashCommandGroup(
         "top",
         "See info on your top artists, tracks, etc.",
+        guilds=guilds,
+        guild_ids=guilds,
+    )
+
+    chart = SlashCommandGroup(
+        "chart",
+        "View charts on your top artists or tracks!",
         guilds=guilds,
         guild_ids=guilds,
     )
@@ -615,6 +624,64 @@ class LastFM(commands.Cog):
         embed.description = desc_str
 
         await ctx.respond(embed=embed)
+
+    @has_set_lfm_user()
+    @chart.command(name="artist", description="View a chart of your top artists. ")
+    @option(
+        name="period",
+        type=str,
+        description="Decides the period of time to find your top tracks for",
+        choices=CMD_TIME_CHOICES,
+        required=False,
+        default="overall",
+    )
+    async def artist_chart(
+        self,
+        ctx: ApplicationContext,
+        user: discord.User = None,
+        period: str = "overall",
+    ) -> None:
+        """
+        Displays a 3x3 chart of the user's top 9 artists.
+        """
+
+        await ctx.defer()
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        discord_id = ctx.user.id if user is None else user.id
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
+
+        lfm_period = PERIODS[period]
+        relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
+
+        NUM_ARTISTS = 9
+        top_artists: list[StrippedArtist] = get_x_top_artists(
+            name, NUM_ARTISTS + 5, relative_timestamp
+        )
+
+        top_artist_urls: list[str] = []
+        index: int = 0
+        while len(top_artist_urls) < NUM_ARTISTS and index < len(top_artists):
+            if (
+                artist_image_url := get_artist_image_url(top_artists[index].artist)
+            ) is not None:
+                top_artist_urls.append(artist_image_url)
+            index += 1
+
+        pil_img_chart: Image = combine_images(top_artist_urls)
+
+        with BytesIO() as image_binary:
+            pil_img_chart.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await ctx.respond(
+                file=discord.File(fp=image_binary, filename=f"{user}_artist_chart.png")
+            )
 
     @pfp.command(
         name="update",

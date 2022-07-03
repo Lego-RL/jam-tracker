@@ -53,6 +53,9 @@ def generate_stripped_track(track: Scrobble, track_plays: int) -> StrippedTrack:
     Generate a StrippedTrack object from a Scrobble object.
     """
 
+    if track is None:
+        return None
+
     track_obj = StrippedTrack(
         title=track.title,
         artist=track.artist,
