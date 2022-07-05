@@ -84,33 +84,25 @@ class LastFM(commands.Cog):
     lfm = SlashCommandGroup(
         "lfm",
         "Commands related to last.fm.",
-        guilds=guilds,
-        guild_ids=guilds,
     )
 
     top = SlashCommandGroup(
         "top",
         "See info on your top artists, tracks, etc.",
-        guilds=guilds,
-        guild_ids=guilds,
     )
 
     chart = SlashCommandGroup(
         "chart",
         "View charts on your top artists or tracks!",
-        guilds=guilds,
-        guild_ids=guilds,
     )
 
     pfp = SlashCommandGroup(
         "pfp",
         "Commands related to the bot's profile picture!",
-        guilds=guilds,
-        guild_ids=guilds,
     )
 
     @has_set_lfm_user()
-    @slash_command(name="scrobbles", guilds=guilds)
+    @slash_command(name="scrobbles")
     async def scrobbles(self, ctx: ApplicationContext, user: discord.User = None):
         """
         Display how many total scrobbles the user has.
@@ -131,7 +123,7 @@ class LastFM(commands.Cog):
         await ctx.respond(f"{name} has **{num_scrobbles}** total scrobbles!")
 
     @has_set_lfm_user()
-    @slash_command(name="now", guilds=guilds)
+    @slash_command(name="now")
     async def now_listening(self, ctx: ApplicationContext, user: discord.User = None):
         """
         Displays what you are currently listening to. Supply name with last.fm account
@@ -196,7 +188,7 @@ class LastFM(commands.Cog):
         await ctx.respond(embed=embed)
 
     @has_set_lfm_user()
-    @slash_command(name="recent", guilds=guilds)
+    @slash_command(name="recent")
     async def recent_tracks(
         self, ctx: ApplicationContext, user: discord.User = None
     ) -> None:
@@ -292,7 +284,7 @@ class LastFM(commands.Cog):
         await ctx.respond(embed=embed)
 
     @has_set_lfm_user()
-    @slash_command(name="discover", guilds=guilds)
+    @slash_command(name="discover")
     async def discover_new_from_favs(
         self,
         ctx: ApplicationContext,
