@@ -274,9 +274,7 @@ class LastFM(commands.Cog):
 
             if not embed.thumbnail.url and i == 0:
                 try:
-                    cover_image_url = self.network.get_track(
-                        song.artist, song.title
-                    ).get_cover_image()
+                    cover_image_url = get_track_image_url(song.title, song.artist)
                     embed.set_thumbnail(url=cover_image_url)
 
                 except Exception as e:
