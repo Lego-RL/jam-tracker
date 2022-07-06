@@ -283,69 +283,69 @@ class LastFM(commands.Cog):
 
         await ctx.respond(embed=embed)
 
-    @has_set_lfm_user()
-    @slash_command(name="discover")
-    async def discover_new_from_favs(
-        self,
-        ctx: ApplicationContext,
-        user: discord.User = None,
-        include_remixes: bool = False,
-    ) -> None:
-        """
-        Displays songs from your favorite artists that the user
-        has never scrobbled before.
-        """
+    # @has_set_lfm_user()
+    # @slash_command(name="discover")
+    # async def discover_new_from_favs(
+    #     self,
+    #     ctx: ApplicationContext,
+    #     user: discord.User = None,
+    #     include_remixes: bool = False,
+    # ) -> None:
+    #     """
+    #     Displays songs from your favorite artists that the user
+    #     has never scrobbled before.
+    #     """
 
-        await ctx.defer()
+    #     await ctx.defer()
 
-        # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username(ctx.user.id, user)
+    #     # if user supplied, set lfm_user to their last.fm username & return if they have none set
+    #     name: str = get_lfm_username(ctx.user.id, user)
 
-        if name is None:
-            await ctx.respond(
-                f"{ctx.user.mention}, this user does not have a last.fm username set!"
-            )
-            return
+    #     if name is None:
+    #         await ctx.respond(
+    #             f"{ctx.user.mention}, this user does not have a last.fm username set!"
+    #         )
+    #         return
 
-        user = self.network.get_user(name)
+    #     user = self.network.get_user(name)
 
-        fav_artists: list[pylast.Artist] = user.get_top_artists(
-            period=pylast.PERIOD_3MONTHS, limit=3
-        )
+    #     fav_artists: list[pylast.Artist] = user.get_top_artists(
+    #         period=pylast.PERIOD_3MONTHS, limit=3
+    #     )
 
-        to_suggest: list[pylast.Track] = []
+    #     to_suggest: list[pylast.Track] = []
 
-        for artist, _ in fav_artists:
-            songs: list[tuple(pylast.Track, int)] = artist.get_top_tracks(limit=100)
-            songs.reverse()  # search through least listened tracks first
+    #     for artist, _ in fav_artists:
+    #         songs: list[tuple(pylast.Track, int)] = artist.get_top_tracks(limit=100)
+    #         songs.reverse()  # search through least listened tracks first
 
-            for song, _ in songs:
+    #         for song, _ in songs:
 
-                if "video" in str(song).lower():
-                    continue
+    #             if "video" in str(song).lower():
+    #                 continue
 
-                if not include_remixes and "remix" in str(song).lower():
-                    continue
+    #             if not include_remixes and "remix" in str(song).lower():
+    #                 continue
 
-                if song.get_userplaycount() == 0:
-                    to_suggest.append(song)
-                    break
+    #             if song.get_userplaycount() == 0:
+    #                 to_suggest.append(song)
+    #                 break
 
-        songs_str = ""
-        for i, song in enumerate(to_suggest):
-            songs_str += (
-                f"\n{i+1}) [{song.get_name()}]({song.get_url()}) - {song.get_artist()}"
-            )
+    #     songs_str = ""
+    #     for i, song in enumerate(to_suggest):
+    #         songs_str += (
+    #             f"\n{i+1}) [{song.get_name()}]({song.get_url()}) - {song.get_artist()}"
+    #         )
 
-        embed = discord.Embed(
-            title=f"Listening suggestions for your top artists!",
-            color=discord.Color.gold(),
-            description=songs_str,
-        )
+    #     embed = discord.Embed(
+    #         title=f"Listening suggestions for your top artists!",
+    #         color=discord.Color.gold(),
+    #         description=songs_str,
+    #     )
 
-        embed.set_thumbnail(url=ctx.user.avatar.url)
+    #     embed.set_thumbnail(url=ctx.user.avatar.url)
 
-        await ctx.respond(embed=embed)
+    #     await ctx.respond(embed=embed)
 
     @lfm.command(
         name="set", description="Set last.fm username to use for all last.fm commands."
