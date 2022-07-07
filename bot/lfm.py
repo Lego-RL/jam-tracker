@@ -358,6 +358,17 @@ class LastFM(commands.Cog):
 
         await ctx.defer()
 
+        user: pylast.User = self.network.get_user(lfm_user)
+
+        try:
+            user.get_recent_tracks(limit=1)
+
+        except:
+            await ctx.respond(
+                "Unable to fetch last.fm profile. Did you misspell your account name?"
+            )
+            return
+
         try:
             store_user(ctx.user.id, lfm_user)
             await ctx.respond(

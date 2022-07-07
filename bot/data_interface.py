@@ -1,3 +1,4 @@
+import traceback
 import discord
 import pylast
 from sqlalchemy import (
@@ -12,6 +13,7 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 import os
 from platform import system
+from typing import Generator
 
 db_path = os.path.join("data", "user_scrobble_data.db")
 
@@ -221,12 +223,12 @@ def update_user_scrobbles(
         """
 
         if initial_timestamp:
-            unstored_scrobbles: list[pylast.PlayedTrack] = user.get_recent_tracks(
+            unstored_scrobbles: Generator[pylast.PlayedTrack] = user.get_recent_tracks(
                 limit=None, time_from=initial_timestamp, stream=True
             )
 
         else:
-            unstored_scrobbles: list[pylast.PlayedTrack] = user.get_recent_tracks(
+            unstored_scrobbles: Generator[pylast.PlayedTrack] = user.get_recent_tracks(
                 limit=None,
                 stream=True,
             )
@@ -236,6 +238,13 @@ def update_user_scrobbles(
 
         # generator is empty, no more scrobbles to store
         except StopIteration:
+            return
+
+        except pylast.PyLastError:
+            return
+
+        except Exception as e:
+            traceback.print_exc()
             return
 
         store_scrobbles(user_id, unstored_scrobbles)
