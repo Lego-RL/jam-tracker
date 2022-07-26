@@ -707,7 +707,13 @@ class LastFM(commands.Cog):
             return
 
         possibilities = pylast.AlbumSearch(album_name=album, network=self.network)
-        first_result: pylast.Album = possibilities.get_next_page()[0]
+
+        try:  # if no albums found tell user
+            first_result: pylast.Album = possibilities.get_next_page()[0]
+
+        except IndexError:
+            await ctx.respond(f"Unable to find album {album}!")
+            return
 
         item_art_url = first_result.get_cover_image()
         item_art = requests.get(item_art_url).content
