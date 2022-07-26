@@ -712,6 +712,9 @@ class LastFM(commands.Cog):
             first_result: pylast.Album = possibilities.get_next_page()[0]
 
         except IndexError:
+
+            # reset cooldown if unsuccessful
+            ctx.command.reset_cooldown(ctx)
             await ctx.respond(f"Unable to find album {album}!")
             return
 
