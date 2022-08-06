@@ -667,15 +667,17 @@ class LastFM(commands.Cog):
         )
 
         top_artist_urls: list[str] = []
+        top_artist_names: list[str] = []
         index: int = 0
         while len(top_artist_urls) < NUM_ARTISTS and index < len(top_artists):
-            if (
-                artist_image_url := get_artist_image_url(top_artists[index].artist)
-            ) is not None:
+            artist_name = top_artists[index].artist
+
+            if (artist_image_url := get_artist_image_url(artist_name)) is not None:
                 top_artist_urls.append(artist_image_url)
+                top_artist_names.append(artist_name)
             index += 1
 
-        pil_img_chart: Image = combine_images(top_artist_urls)
+        pil_img_chart: Image = combine_images(top_artist_names, top_artist_urls)
 
         with BytesIO() as image_binary:
             pil_img_chart.save(image_binary, "PNG")

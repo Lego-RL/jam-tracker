@@ -2,7 +2,7 @@ from io import BytesIO
 from math import sqrt
 
 import discord
-from PIL import Image
+from PIL import Image, ImageDraw, ImageFont
 import requests
 
 
@@ -37,7 +37,7 @@ def update_embed_color(embed: discord.Embed) -> discord.Embed:
     return embed
 
 
-def combine_images(image_urls: list[str]) -> Image:
+def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
     """
     Take a list of image URLs and return a combined image.
     Number of images given should always be a perfect square.
@@ -47,8 +47,25 @@ def combine_images(image_urls: list[str]) -> Image:
 
     images = [requests.get(url).content for url in image_urls]
     images = [Image.open(BytesIO(image)) for image in images]
-
     w, h = images[0].size
+
+    updated_imgs: list = []
+    # write text over every image
+    for artist_name, image in zip(top_artist_names, images):
+        draw = ImageDraw.Draw(image)
+        font = ImageFont.truetype("fonts/Roboto-Bold.ttf", 52)
+        text_width, text_height = draw.textsize(artist_name, font=font)
+
+        draw.text(
+            ((w - text_width) / 2, 20),
+            artist_name,
+            font=font,
+            fill=(255, 255, 255),
+        )
+
+        # draw.text((0, 0), artist_name, (255, 255, 255), font=font)
+        updated_imgs.append(image)
+
     grid = Image.new("RGB", size=(row_col_size * w, row_col_size * h))
 
     for i, img in enumerate(images):
