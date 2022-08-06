@@ -8,17 +8,27 @@ from spotipy.oauth2 import SpotifyClientCredentials
 
 from main import SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET
 
-client: spotipy.Spotify = spotipy.Spotify(
-    client_credentials_manager=SpotifyClientCredentials(
-        client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET
-    )
-)
+# client: spotipy.Spotify = spotipy.Spotify(
+#     client_credentials_manager=SpotifyClientCredentials(
+#         client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET
+#     ),
+#     requests_timeout=10,
+#     retries=10,
+# )
 
 
 def get_artist_image_url(artist: str) -> str:
     """
     Returns the artist's image URL, retrieved from Spotify.
     """
+    client: spotipy.Spotify = spotipy.Spotify(
+        client_credentials_manager=SpotifyClientCredentials(
+            client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET
+        ),
+        requests_timeout=10,
+        retries=10,
+    )
+
     try:
         search_info: dict = client.search(q=f"artist:{artist}", limit=1, type="artist")
         artist_info: dict = search_info["artists"]["items"][0]
@@ -34,6 +44,14 @@ def get_track_image_url(track: str, artist: str) -> str:
     """
     Returns the track's image URL, retrieved from Spotify.
     """
+
+    client: spotipy.Spotify = spotipy.Spotify(
+        client_credentials_manager=SpotifyClientCredentials(
+            client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET
+        ),
+        requests_timeout=10,
+        retries=10,
+    )
 
     try:
         if artist:
@@ -64,6 +82,14 @@ def get_track_info(track: str, artist: str = None) -> tuple:
     Returns the track's title, album, and cover art url retrieved
     from Spotify.
     """
+
+    client: spotipy.Spotify = spotipy.Spotify(
+        client_credentials_manager=SpotifyClientCredentials(
+            client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET
+        ),
+        requests_timeout=10,
+        retries=10,
+    )
 
     try:
         if artist:

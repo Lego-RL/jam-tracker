@@ -631,7 +631,7 @@ class LastFM(commands.Cog):
     @option(
         name="period",
         type=str,
-        description="Decides the period of time to find your top tracks for",
+        description="Decides the period of time to find your top artists for",
         choices=CMD_TIME_CHOICES,
         required=False,
         default="overall",
