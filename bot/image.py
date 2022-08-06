@@ -53,7 +53,7 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
     # write text over every image
     for artist_name, image in zip(top_artist_names, images):
         draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype("fonts/Roboto-Bold.ttf", 52)
+        font = ImageFont.truetype("Roboto-Bold.ttf", 52)
         text_width, text_height = draw.textsize(artist_name, font=font)
 
         draw.text(
