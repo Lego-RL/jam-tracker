@@ -57,7 +57,7 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
         text_width, text_height = draw.textsize(artist_name, font=font)
 
         draw.text(
-            ((w - text_width) / 2, 20),
+            ((w - text_width) / 2, h - 45),
             artist_name,
             font=font,
             fill=(255, 255, 255),
