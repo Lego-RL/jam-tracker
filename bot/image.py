@@ -53,7 +53,7 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
     # write text over every image
     for artist_name, image in zip(top_artist_names, images):
         draw = ImageDraw.Draw(image)
-        font = ImageFont.truetype("fonts/Roboto-Bold.ttf", 52)
+        font = ImageFont.truetype("Roboto-Bold.ttf", 52)
         text_width, text_height = draw.textsize(artist_name, font=font)
 
         # make black background rectangle behind text
@@ -66,24 +66,15 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
         OPACITY = 50
         paste_mask = rectangle_img.split()[3].point(lambda i: i * OPACITY // 100)
 
-        # rectangle_draw.text((10, 10), artist_name, font=font)
-
         image.paste(
             rectangle_img, ((w - rectangle_size[0]) // 2, (h - 85)), mask=paste_mask
         )
         draw.text(
-            # (((w - rectangle_size[0]) // 2) + 10, (h - 85) - (rectangle_size[1] // 2)),
             (((w - rectangle_size[0]) // 2) + 10, (h - 85)),
             artist_name,
             font=font,
         )
 
-        # draw.text(
-        #     ((w - text_width) / 2, h - 70),
-        #     artist_name,
-        #     font=font,
-        #     fill=(255, 255, 255),
-        # )
         updated_imgs.append(image)
 
     grid = Image.new("RGBA", size=(row_col_size * w, row_col_size * h))
