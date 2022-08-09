@@ -599,7 +599,6 @@ class LastFM(commands.Cog):
 
         embed = discord.Embed(
             color=discord.Color.gold(),
-            # description=track_info.description,
         )
 
         user_image = user.get_image()
