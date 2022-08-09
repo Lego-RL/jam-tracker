@@ -585,10 +585,13 @@ class LastFM(commands.Cog):
 
         try:
             stripped_track: StrippedTrack = track_data[0]
+            if stripped_track is None:
+                raise ValueError
+
             track_plays: int = track_data[1]
             image_url: str = track_data[2]
 
-        except IndexError:
+        except (IndexError, ValueError):
             await ctx.respond("Unable to find track!")
             return
 
