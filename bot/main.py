@@ -16,7 +16,7 @@ SPOTIPY_CLIENT_SECRET = os.getenv("SPOTIPY_CLIENT_SECRET")
 bot = discord.Bot()
 
 
-extensions = ["lfm", "admin"]
+extensions = ["lfm", "admin", "custom_util_cmds"]
 
 for ext in extensions:
     bot.load_extension(ext)
