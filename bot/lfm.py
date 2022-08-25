@@ -417,6 +417,9 @@ class LastFM(commands.Cog):
         lfm_period = PERIODS[period]
         relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
 
+        if relative_timestamp is None:
+            relative_timestamp = 0
+
         stripped_artists: list[StrippedArtist] = get_x_top_artists(
             name, 10, relative_timestamp
         )
@@ -507,6 +510,10 @@ class LastFM(commands.Cog):
 
         lfm_period = PERIODS[period]
         relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
+
+        # set to 0 since any song after unix time "0" includes all songs anyway
+        if relative_timestamp is None:
+            relative_timestamp = 0
 
         stripped_tracks: list[StrippedTrack] = get_x_top_tracks(
             name, 10, relative_timestamp
@@ -662,6 +669,9 @@ class LastFM(commands.Cog):
 
         lfm_period = PERIODS[period]
         relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
+
+        if relative_timestamp is None:
+            relative_timestamp = 0
 
         NUM_ARTISTS = 9
         top_artists: list[StrippedArtist] = get_x_top_artists(

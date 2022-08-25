@@ -1,8 +1,7 @@
-from typing import Union
 import datetime
 
 import pylast
-from sqlalchemy import func, asc, desc
+from sqlalchemy import func, desc
 
 
 from data_interface import Session, User, Scrobble
@@ -169,7 +168,10 @@ def get_x_recent_tracks(lfm_user: str, num_tracks: int) -> list[StrippedTrack]:
 
 
 def get_x_top_tracks(
-    lfm_user: str, num_tracks: int, unix_timestamp: int = None
+    lfm_user: str,
+    num_tracks: int,
+    before_unix_timestamp: int = 0,
+    after_unix_timestamp=int(datetime.datetime.now().timestamp()),
 ) -> list[StrippedTrack]:
     """
     Return top x tracks based on number of scrobbles the
@@ -182,26 +184,16 @@ def get_x_top_tracks(
             session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
         )
 
-        if unix_timestamp:
-            tracks: list[Scrobble] = (
-                session.query(Scrobble)
-                .filter_by(user_id=user_id_query.c.id)
-                .filter(Scrobble.unix_timestamp > unix_timestamp)
-                .group_by(Scrobble.title)
-                .order_by(desc(func.count(Scrobble.title)))
-                .limit(num_tracks)
-                .all()
-            )
-
-        else:
-            tracks: list[Scrobble] = (
-                session.query(Scrobble)
-                .filter_by(user_id=user_id_query.c.id)
-                .group_by(Scrobble.title)
-                .order_by(desc(func.count(Scrobble.title)))
-                .limit(num_tracks)
-                .all()
-            )
+        tracks: list[Scrobble] = (
+            session.query(Scrobble)
+            .filter_by(user_id=user_id_query.c.id)
+            .filter(Scrobble.unix_timestamp > before_unix_timestamp)
+            .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+            .group_by(Scrobble.title)
+            .order_by(desc(func.count(Scrobble.title)))
+            .limit(num_tracks)
+            .all()
+        )
 
         if tracks is None:
             return None
@@ -211,21 +203,14 @@ def get_x_top_tracks(
                 session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
             )
 
-            if unix_timestamp:
-                track_plays = (
-                    session.query(Scrobble)
-                    .filter_by(user_id=user_id_query.c.id)
-                    .filter_by(title=track.title)
-                    .filter(Scrobble.unix_timestamp > unix_timestamp)
-                    .count()
-                )
-            else:
-                track_plays = (
-                    session.query(Scrobble)
-                    .filter_by(user_id=user_id_query.c.id)
-                    .filter_by(title=track.title)
-                    .count()
-                )
+            track_plays = (
+                session.query(Scrobble)
+                .filter_by(user_id=user_id_query.c.id)
+                .filter_by(title=track.title)
+                .filter(Scrobble.unix_timestamp > before_unix_timestamp)
+                .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+                .count()
+            )
 
             track_obj: StrippedTrack = generate_stripped_track(track, track_plays)
 
@@ -235,7 +220,10 @@ def get_x_top_tracks(
 
 
 def get_x_top_artists(
-    lfm_user: str, num_artists: int, unix_timestamp: int = None
+    lfm_user: str,
+    num_artists: int,
+    before_unix_timestamp: int = 0,
+    after_unix_timestamp=int(datetime.datetime.now().timestamp()),
 ) -> list[StrippedArtist]:
     """
     Return top x artists based on number of scrobbles the
@@ -248,25 +236,16 @@ def get_x_top_artists(
             session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
         )
 
-        if unix_timestamp:
-            artists: list[Scrobble] = (
-                session.query(Scrobble)
-                .filter_by(user_id=user_id_query.c.id)
-                .filter(Scrobble.unix_timestamp > unix_timestamp)
-                .group_by(Scrobble.artist)
-                .order_by(desc(func.count(Scrobble.artist)))
-                .limit(num_artists)
-                .all()
-            )
-        else:
-            artists: list[Scrobble] = (
-                session.query(Scrobble)
-                .filter_by(user_id=user_id_query.c.id)
-                .group_by(Scrobble.artist)
-                .order_by(desc(func.count(Scrobble.artist)))
-                .limit(num_artists)
-                .all()
-            )
+        artists: list[Scrobble] = (
+            session.query(Scrobble)
+            .filter_by(user_id=user_id_query.c.id)
+            .filter(Scrobble.unix_timestamp > before_unix_timestamp)
+            .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+            .group_by(Scrobble.artist)
+            .order_by(desc(func.count(Scrobble.artist)))
+            .limit(num_artists)
+            .all()
+        )
 
         if artists is None:
             return None
@@ -276,22 +255,14 @@ def get_x_top_artists(
                 session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
             )
 
-            if unix_timestamp:
-
-                artist_plays = (
-                    session.query(Scrobble)
-                    .filter_by(user_id=user_id_query.c.id)
-                    .filter_by(artist=artist.artist)
-                    .filter(Scrobble.unix_timestamp > unix_timestamp)
-                    .count()
-                )
-            else:
-                artist_plays = (
-                    session.query(Scrobble)
-                    .filter_by(user_id=user_id_query.c.id)
-                    .filter_by(artist=artist.artist)
-                    .count()
-                )
+            artist_plays = (
+                session.query(Scrobble)
+                .filter_by(user_id=user_id_query.c.id)
+                .filter_by(artist=artist.artist)
+                .filter(Scrobble.unix_timestamp > before_unix_timestamp)
+                .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+                .count()
+            )
 
             artist_obj: StrippedArtist = StrippedArtist(artist.artist, artist_plays)
 
@@ -339,3 +310,7 @@ def get_discord_relative_timestamp(seconds: int) -> str:
     unix_timestamp = int((now + delta).timestamp())
 
     return f"<t:{unix_timestamp}>"
+
+
+if __name__ == "__main__":
+    get_x_top_tracks("Lego_RL", 10)
