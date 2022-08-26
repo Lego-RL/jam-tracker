@@ -169,9 +169,10 @@ def get_x_recent_tracks(lfm_user: str, num_tracks: int) -> list[StrippedTrack]:
 
 def get_x_top_tracks(
     lfm_user: str,
-    num_tracks: int,
-    before_unix_timestamp: int = 0,
-    after_unix_timestamp=int(datetime.datetime.now().timestamp()),
+    # arbitrarily large number to represent no limit if not given a limit
+    num_tracks: int = 10**100,
+    after_unix_timestamp: int = 0,
+    before_unix_timestamp=int(datetime.datetime.now().timestamp()),
 ) -> list[StrippedTrack]:
     """
     Return top x tracks based on number of scrobbles the
@@ -187,8 +188,8 @@ def get_x_top_tracks(
         tracks: list[Scrobble] = (
             session.query(Scrobble)
             .filter_by(user_id=user_id_query.c.id)
-            .filter(Scrobble.unix_timestamp > before_unix_timestamp)
-            .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+            .filter(Scrobble.unix_timestamp > after_unix_timestamp)
+            .filter(Scrobble.unix_timestamp < before_unix_timestamp)
             .group_by(Scrobble.title)
             .order_by(desc(func.count(Scrobble.title)))
             .limit(num_tracks)
@@ -207,8 +208,8 @@ def get_x_top_tracks(
                 session.query(Scrobble)
                 .filter_by(user_id=user_id_query.c.id)
                 .filter_by(title=track.title)
-                .filter(Scrobble.unix_timestamp > before_unix_timestamp)
-                .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+                .filter(Scrobble.unix_timestamp > after_unix_timestamp)
+                .filter(Scrobble.unix_timestamp < before_unix_timestamp)
                 .count()
             )
 
@@ -221,9 +222,9 @@ def get_x_top_tracks(
 
 def get_x_top_artists(
     lfm_user: str,
-    num_artists: int,
-    before_unix_timestamp: int = 0,
-    after_unix_timestamp=int(datetime.datetime.now().timestamp()),
+    num_artists: int = 10**100,
+    after_unix_timestamp: int = 0,
+    before_unix_timestamp=int(datetime.datetime.now().timestamp()),
 ) -> list[StrippedArtist]:
     """
     Return top x artists based on number of scrobbles the
@@ -239,8 +240,8 @@ def get_x_top_artists(
         artists: list[Scrobble] = (
             session.query(Scrobble)
             .filter_by(user_id=user_id_query.c.id)
-            .filter(Scrobble.unix_timestamp > before_unix_timestamp)
-            .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+            .filter(Scrobble.unix_timestamp > after_unix_timestamp)
+            .filter(Scrobble.unix_timestamp < before_unix_timestamp)
             .group_by(Scrobble.artist)
             .order_by(desc(func.count(Scrobble.artist)))
             .limit(num_artists)
@@ -259,8 +260,8 @@ def get_x_top_artists(
                 session.query(Scrobble)
                 .filter_by(user_id=user_id_query.c.id)
                 .filter_by(artist=artist.artist)
-                .filter(Scrobble.unix_timestamp > before_unix_timestamp)
-                .filter(Scrobble.unix_timestamp < after_unix_timestamp)
+                .filter(Scrobble.unix_timestamp > after_unix_timestamp)
+                .filter(Scrobble.unix_timestamp < before_unix_timestamp)
                 .count()
             )
 

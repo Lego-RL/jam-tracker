@@ -10,6 +10,8 @@ from discord import CheckFailure
 from discord.ext.commands.errors import CommandOnCooldown
 
 import pylast
+
+import datetime
 import requests
 
 from data_interface import (
@@ -282,70 +284,6 @@ class LastFM(commands.Cog):
         embed = update_embed_color(embed)
 
         await ctx.respond(embed=embed)
-
-    # @has_set_lfm_user()
-    # @slash_command(name="discover")
-    # async def discover_new_from_favs(
-    #     self,
-    #     ctx: ApplicationContext,
-    #     user: discord.User = None,
-    #     include_remixes: bool = False,
-    # ) -> None:
-    #     """
-    #     Displays songs from your favorite artists that the user
-    #     has never scrobbled before.
-    #     """
-
-    #     await ctx.defer()
-
-    #     # if user supplied, set lfm_user to their last.fm username & return if they have none set
-    #     name: str = get_lfm_username(ctx.user.id, user)
-
-    #     if name is None:
-    #         await ctx.respond(
-    #             f"{ctx.user.mention}, this user does not have a last.fm username set!"
-    #         )
-    #         return
-
-    #     user = self.network.get_user(name)
-
-    #     fav_artists: list[pylast.Artist] = user.get_top_artists(
-    #         period=pylast.PERIOD_3MONTHS, limit=3
-    #     )
-
-    #     to_suggest: list[pylast.Track] = []
-
-    #     for artist, _ in fav_artists:
-    #         songs: list[tuple(pylast.Track, int)] = artist.get_top_tracks(limit=100)
-    #         songs.reverse()  # search through least listened tracks first
-
-    #         for song, _ in songs:
-
-    #             if "video" in str(song).lower():
-    #                 continue
-
-    #             if not include_remixes and "remix" in str(song).lower():
-    #                 continue
-
-    #             if song.get_userplaycount() == 0:
-    #                 to_suggest.append(song)
-    #                 break
-
-    #     songs_str = ""
-    #     for i, song in enumerate(to_suggest):
-    #         songs_str += (
-    #             f"\n{i+1}) [{song.get_name()}]({song.get_url()}) - {song.get_artist()}"
-    #         )
-
-    #     embed = discord.Embed(
-    #         title=f"Listening suggestions for your top artists!",
-    #         color=discord.Color.gold(),
-    #         description=songs_str,
-    #     )
-
-    #     embed.set_thumbnail(url=ctx.user.avatar.url)
-
-    #     await ctx.respond(embed=embed)
 
     @lfm.command(
         name="set", description="Set last.fm username to use for all last.fm commands."
@@ -697,6 +635,79 @@ class LastFM(commands.Cog):
             await ctx.respond(
                 file=discord.File(fp=image_binary, filename=f"{user}_artist_chart.png")
             )
+
+    @slash_command(
+        name="overview",
+        description="View an overview of your recent top tracks, artists, albums and genres.",
+        guilds=guilds,
+    )
+    async def overview(
+        self, ctx: ApplicationContext, user: discord.User = None
+    ) -> None:
+        """
+        Give an overview of the user's day by day stats for their most listened to tracks, artists, albums and genres.
+        """
+
+        await ctx.defer()
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id)
+        discord_id = ctx.user.id if user is None else user.id
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
+
+        embed = discord.Embed(title="Overview of last 4 days")
+
+        description: str = ""
+
+        now: datetime.date = datetime.date.today()
+        lower_bound: datetime.datetime = datetime.datetime(now.year, now.month, now.day)
+        upper_bound: datetime.datetime = datetime.datetime.today() + datetime.timedelta(
+            days=1
+        )
+
+        DAYS: int = 4
+        for i in range(DAYS):
+
+            lower_stamp = int(lower_bound.timestamp())
+            upper_stamp = int(upper_bound.timestamp())
+
+            print(upper_stamp - lower_stamp)
+
+            # get top artist on day
+            top_artist: StrippedArtist = None
+            top_track: StrippedTrack = None
+            try:
+                top_artist = get_x_top_artists(name, 1, lower_stamp, upper_stamp)[0]
+
+            except IndexError:
+                print("no top artist for time period")
+                continue
+
+            try:
+                top_track = get_x_top_tracks(name, 1, lower_stamp, upper_stamp)[0]
+
+            except IndexError:
+                print(
+                    "no top track?? but there was a top artist?? should not reach this line"
+                )
+                continue
+
+            discord_date_timestamp = f"<t:{int(lower_bound.timestamp())}:D>"
+            description += f"""\n{discord_date_timestamp}
+                                Top artist: {top_artist.artist} | {top_artist.artist_plays}
+                                Top track: {top_track.title} | {top_track.track_plays}\n"""
+
+            # move 1 day in the past to get the next day's info on next iteration
+            upper_bound = lower_bound
+            lower_bound = lower_bound - datetime.timedelta(days=1)
+
+        embed.description = description
+        await ctx.respond(embed=embed)
 
     @pfp.command(
         name="update",
