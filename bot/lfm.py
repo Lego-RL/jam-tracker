@@ -676,8 +676,6 @@ class LastFM(commands.Cog):
             lower_stamp = int(lower_bound.timestamp())
             upper_stamp = int(upper_bound.timestamp())
 
-            print(upper_stamp - lower_stamp)
-
             # get top artist on day
             top_artist: StrippedArtist = None
             top_track: StrippedTrack = None
