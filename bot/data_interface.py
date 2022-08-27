@@ -114,7 +114,7 @@ def store_scrobble(discord_id: int, scrobble: pylast.PlayedTrack) -> bool:
     return True
 
 
-def store_scrobbles(discord_id: int, scrobbles: Generator[pylast.PlayedTrack]) -> None:
+def store_scrobbles(discord_id: int, scrobbles: list[pylast.PlayedTrack]) -> None:
     """
     Return final scrobble to gather its timestamp from if necessary,
     otherwise return None if user not found.
