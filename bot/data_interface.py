@@ -114,7 +114,7 @@ def store_scrobble(discord_id: int, scrobble: pylast.PlayedTrack) -> bool:
     return True
 
 
-def store_scrobbles(discord_id: int, scrobbles: list[pylast.PlayedTrack]) -> None:
+def store_scrobbles(discord_id: int, scrobbles: Generator[pylast.PlayedTrack]) -> None:
     """
     Return final scrobble to gather its timestamp from if necessary,
     otherwise return None if user not found.
@@ -126,19 +126,24 @@ def store_scrobbles(discord_id: int, scrobbles: list[pylast.PlayedTrack]) -> Non
         if not user:
             return None
 
-        for scrobble in scrobbles:
-            scrobble_track: pylast.Track = scrobble.track
-            artist, title = str(scrobble_track).split(sep=" - ", maxsplit=1)
+        try:
+            for scrobble in scrobbles:
+                scrobble_track: pylast.Track = scrobble.track
+                artist, title = str(scrobble_track).split(sep=" - ", maxsplit=1)
 
-            new_scrobble = Scrobble(
-                title=title,
-                artist=artist,
-                album=scrobble.album,
-                lfm_url=scrobble_track.get_url(),
-                unix_timestamp=int(scrobble.timestamp),
-            )
+                new_scrobble = Scrobble(
+                    title=title,
+                    artist=artist,
+                    album=scrobble.album,
+                    lfm_url=scrobble_track.get_url(),
+                    unix_timestamp=int(scrobble.timestamp),
+                )
 
-            user.scrobble_entries.append(new_scrobble)
+                user.scrobble_entries.append(new_scrobble)
+
+        # generator may be empty? precaution
+        except StopIteration:
+            return
 
 
 def get_last_stored_timestamp(discord_id: int) -> Scrobble:
@@ -232,20 +237,6 @@ def update_user_scrobbles(
                 limit=None,
                 stream=True,
             )
-
-        try:
-            next(unstored_scrobbles)
-
-        # generator is empty, no more scrobbles to store
-        except StopIteration:
-            return
-
-        except pylast.PyLastError:
-            return
-
-        except Exception as e:
-            traceback.print_exc()
-            return
 
         store_scrobbles(user_id, unstored_scrobbles)
 
