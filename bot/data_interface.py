@@ -34,7 +34,9 @@ class User(Base):
     last_fm_user = Column(String, nullable=False)
 
     # each user can have many scrobble entries
-    scrobble_entries = relationship("Scrobble", back_populates="user")
+    scrobble_entries = relationship(
+        "Scrobble", back_populates="user", cascade="all, delete, delete-orphan"
+    )
 
     def __repr__(self):
         return f"User(id={self.id!r}, discord_id={self.discord_id!r}, last_fm_user={self.last_fm_user!r})"
@@ -54,6 +56,7 @@ class Scrobble(Base):
     user_id = Column(Integer, ForeignKey("user_account.id"))
 
     # each scrobble belongs to one single user
+    # user = relationship("User", uselist=False, cascade="all, delete")
     user = relationship("User", uselist=False)
 
     def __repr__(self):
@@ -83,6 +86,40 @@ def store_user(discord_id: int, lfm_user: str) -> bool:
         new_user = User(discord_id=discord_id, last_fm_user=lfm_user)
         session.add(new_user)
 
+        return True
+
+
+def update_user(discord_id: int, lfm_user: str) -> None:
+    """
+    Updates a user's information when they were already associated
+    with an Last.fm account, and now want to switch to another.
+
+    Returning true represents the user was successfully updated. Return
+    False if user supplied same last.fm user as one already stored.
+    """
+
+    with Session.begin() as session:
+        current_user_obj: User = (
+            session.query(User).filter_by(discord_id=discord_id).first()
+        )
+
+        if lfm_user == current_user_obj.last_fm_user:
+            return False
+
+        else:
+            user_obj: User = (
+                session.query(User).filter_by(discord_id=discord_id).first()
+            )
+            session.delete(user_obj)
+            session.expire_all()
+
+        # start new session so SQLA doesn't think I'm overwriting when obj with same user_id as deleted
+        # is added to DB
+    with Session.begin() as session:
+        new_user = User(discord_id=discord_id, last_fm_user=lfm_user)
+        session.add(new_user)
+
+        # successfully "updated" (deleted & added new user obj) user
         return True
 
 

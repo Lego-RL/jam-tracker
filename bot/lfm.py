@@ -16,6 +16,7 @@ import requests
 
 from data_interface import (
     store_user,
+    update_user,
     retrieve_lfm_username,
     get_lfm_username,
     get_lfm_username_update_data,
@@ -305,17 +306,34 @@ class LastFM(commands.Cog):
                 "Unable to fetch last.fm profile. Did you misspell your account name?",
                 ephemeral=True,
             )
+            ctx.command.reset_cooldown(ctx)
             return
 
-        try:
-            store_user(ctx.user.id, lfm_user)
+        result: bool = store_user(ctx.user.id, lfm_user)
+
+        if result:
             await ctx.respond(
                 f"Successfully stored `{lfm_user}` as your last.fm account!",
                 ephemeral=True,
             )
+        else:
+            update_result: bool = update_user(ctx.user.id, lfm_user)
 
-        except Exception as e:
-            print(f"Oh no, error in lfm_user_set func!: {e}")
+            # successful update
+            if update_result:
+                await ctx.respond(
+                    f"Successfully updated your stored last.fm account to `{lfm_user}`!",
+                    ephemeral=True,
+                )
+
+            # trying to set to the same username already set
+            else:
+                await ctx.respond(
+                    f"You're trying to set your last.fm username to the same one already stored, silly goose!",
+                    ephemeral=True,
+                )
+                ctx.command.reset_cooldown(ctx)
+                return
 
     @has_set_lfm_user()
     @top.command(name="artists", description="See a list of your top ten artists.")
@@ -772,7 +790,8 @@ class LastFM(commands.Cog):
             )
 
             await ctx.respond(
-                f"{ctx.user.mention}, this command is on cooldown! Try again after {disc_relative_timestamp}."
+                f"{ctx.user.mention}, this command is on cooldown! Try again after {disc_relative_timestamp}.",
+                ephemeral=True,
             )
 
         else:
