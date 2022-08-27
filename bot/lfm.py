@@ -295,8 +295,6 @@ class LastFM(commands.Cog):
         last.fm related commands.
         """
 
-        await ctx.defer()
-
         user: pylast.User = self.network.get_user(lfm_user)
 
         try:
@@ -312,12 +310,9 @@ class LastFM(commands.Cog):
         try:
             store_user(ctx.user.id, lfm_user)
             await ctx.respond(
-                f"Successfully stored `{lfm_user}` as your last.fm account! Depending on your scrobble count, it may take a few minutes to collect all of your scrobble data before you can use commands involving your scrobbles.",
+                f"Successfully stored `{lfm_user}` as your last.fm account!",
                 ephemeral=True,
             )
-
-            # start collecting scrobbles
-            get_lfm_username_update_data(self.network, ctx.user.id, ctx.user)
 
         except Exception as e:
             print(f"Oh no, error in lfm_user_set func!: {e}")
