@@ -288,6 +288,7 @@ class LastFM(commands.Cog):
     @lfm.command(
         name="set", description="Set last.fm username to use for all last.fm commands."
     )
+    @commands.cooldown(1, (60 * 10), commands.BucketType.user)
     async def lfm_user_set(self, ctx: ApplicationContext, lfm_user: str) -> None:
         """
         Gets discord user's last.fm username to store for use with all
@@ -303,15 +304,20 @@ class LastFM(commands.Cog):
 
         except:
             await ctx.respond(
-                "Unable to fetch last.fm profile. Did you misspell your account name?"
+                "Unable to fetch last.fm profile. Did you misspell your account name?",
+                ephemeral=True,
             )
             return
 
         try:
             store_user(ctx.user.id, lfm_user)
             await ctx.respond(
-                f"Successfully stored `{lfm_user}` as your last.fm account!"
+                f"Successfully stored `{lfm_user}` as your last.fm account! Depending on your scrobble count, it may take a few minutes to collect all of your scrobble data before you can use commands involving your scrobbles.",
+                ephemeral=True,
             )
+
+            # start collecting scrobbles
+            get_lfm_username_update_data(self.network, ctx.user.id, ctx.user)
 
         except Exception as e:
             print(f"Oh no, error in lfm_user_set func!: {e}")
