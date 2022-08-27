@@ -1,7 +1,7 @@
 import datetime
 
 import pylast
-from sqlalchemy import func, desc
+from sqlalchemy import func, desc, and_
 
 
 from data_interface import Session, User, Scrobble
@@ -190,7 +190,7 @@ def get_x_top_tracks(
             .filter_by(user_id=user_id_query.c.id)
             .filter(Scrobble.unix_timestamp > after_unix_timestamp)
             .filter(Scrobble.unix_timestamp < before_unix_timestamp)
-            .group_by(Scrobble.title)
+            .group_by(Scrobble.title, Scrobble.artist)
             .order_by(desc(func.count(Scrobble.title)))
             .limit(num_tracks)
             .all()
@@ -208,6 +208,7 @@ def get_x_top_tracks(
                 session.query(Scrobble)
                 .filter_by(user_id=user_id_query.c.id)
                 .filter_by(title=track.title)
+                .filter_by(artist=track.artist)
                 .filter(Scrobble.unix_timestamp > after_unix_timestamp)
                 .filter(Scrobble.unix_timestamp < before_unix_timestamp)
                 .count()
