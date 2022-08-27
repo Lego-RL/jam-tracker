@@ -115,10 +115,6 @@ def store_scrobble(discord_id: int, scrobble: pylast.PlayedTrack) -> bool:
 
 
 def store_scrobbles(discord_id: int, scrobbles: list[pylast.PlayedTrack]) -> None:
-    """
-    Return final scrobble to gather its timestamp from if necessary,
-    otherwise return None if user not found.
-    """
 
     with Session.begin() as session:
         user: User = session.query(User).filter_by(discord_id=discord_id).first()
@@ -239,11 +235,6 @@ def update_user_scrobbles(
             )
 
         store_scrobbles(user_id, unstored_scrobbles)
-
-        # check if last check was added, odd bug that
-        # leaves off last track from being stored
-        if not check_recent_track_stored(user, user_id):
-            store_scrobble(user_id, get_last_scrobbled_track(user))
 
     latest_timestamp: int = get_last_stored_timestamp(user_id)
     user: pylast.User = network.get_user(lfm_user)

@@ -683,7 +683,9 @@ class LastFM(commands.Cog):
                 top_artist = get_x_top_artists(name, 1, lower_stamp, upper_stamp)[0]
 
             except IndexError:
-                print("no top artist for time period")
+                # no top artist for time period, prepare for next loop
+                upper_bound = lower_bound
+                lower_bound = lower_bound - datetime.timedelta(days=1)
                 continue
 
             try:

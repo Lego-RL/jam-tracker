@@ -312,7 +312,3 @@ def get_discord_relative_timestamp(seconds: int) -> str:
     unix_timestamp = int((now + delta).timestamp())
 
     return f"<t:{unix_timestamp}>"
-
-
-if __name__ == "__main__":
-    get_x_top_tracks("Lego_RL", 10)
