@@ -977,7 +977,8 @@ class LastFM(commands.Cog):
     async def cog_command_error(self, ctx: ApplicationContext, error: Exception):
         if isinstance(error, CheckFailure):
             await ctx.respond(
-                f"{ctx.user.mention}, make sure you have set your last.fm username using `/lfm set [username]`!"
+                f"{ctx.user.mention}, make sure you have set your last.fm username using `/lfm set [username]`!",
+                ephemeral=True,
             )
 
         elif isinstance(error, CommandOnCooldown):
