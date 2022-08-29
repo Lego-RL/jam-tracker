@@ -29,6 +29,7 @@ from spotify import get_artist_image_url, get_track_image_url, get_album_image_u
 from PIL import Image
 
 from cmd_data_helpers import StrippedTrack, StrippedArtist, StrippedAlbum
+from cmd_data_helpers import get_artist_lfm_link, get_album_lfm_link
 from cmd_data_helpers import (
     get_x_recent_tracks,
     get_x_top_tracks,
@@ -401,9 +402,7 @@ class LastFM(commands.Cog):
                     embed.set_thumbnail(url=artist_image_url)
                     embed = update_embed_color(embed)
 
-            artist_link = (
-                f"https://www.last.fm/music/{'+'.join(artist.artist.split(' '))}"
-            )
+            artist_link: str = get_artist_lfm_link(artist.artist)
             artists_str += f"\n{i+1}) [{artist.artist}]({artist_link}) - **{artist.artist_plays}** scrobbles"
 
         embed.description = artists_str
@@ -584,7 +583,7 @@ class LastFM(commands.Cog):
                     embed.set_thumbnail(url=album_image_url)
                     embed = update_embed_color(embed)
 
-            album_link = f"https://www.last.fm/music/{'+'.join(album.artist.split(' '))}/{'+'.join(album.album.split(' '))}"
+            album_link: str = get_album_lfm_link(album.artist, album.album)
             albums_str += f"\n{i+1}) [{album.album}]({album_link}) - **{album.album_plays}** scrobbles"
 
         embed.description = albums_str

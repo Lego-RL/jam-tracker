@@ -380,3 +380,21 @@ def get_discord_relative_timestamp(seconds: int) -> str:
     unix_timestamp = int((now + delta).timestamp())
 
     return f"<t:{unix_timestamp}>"
+
+
+def get_artist_lfm_link(artist: str) -> str:
+    """
+    Construct a link to an artist @ last.fm's site.
+    """
+    return f"https://www.last.fm/music/{'+'.join(artist.split(' '))}"
+
+
+def get_album_lfm_link(artist: str, album: str) -> str:
+    """
+    Construct a link to an album @ last.fm's site.
+    """
+
+    artist_portion: str = "+".join(artist.split(" "))
+    album_portion: str = "+".join(album.split(" "))
+
+    return f"https://www.last.fm/music/{artist_portion}/{album_portion}"
