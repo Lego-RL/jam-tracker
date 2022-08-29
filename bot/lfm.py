@@ -832,6 +832,7 @@ class LastFM(commands.Cog):
 
         await ctx.send(embed=embed)
 
+    @has_set_lfm_user()
     @slash_command(
         name="overview",
         description="View an overview of your recent top tracks, artists, albums and genres.",
