@@ -881,9 +881,9 @@ class LastFM(commands.Cog):
             discord_date_timestamp = f"<t:{int(lower_bound.timestamp())}:D>"
             description += (
                 f"{discord_date_timestamp}\n"
-                f"Top artist: {top_artist.artist} | {top_artist.artist_plays}\n"
-                f"Top album: {top_album.album} | {top_album.album_plays}\n"
-                f"Top track: {top_track.title} | {top_track.track_plays}\n\n"
+                f"Top artist: [{top_artist.artist}]({get_artist_lfm_link(top_artist.artist)}) | {top_artist.artist_plays}\n"
+                f"Top album: [{top_album.album}]({get_album_lfm_link(top_album.artist, top_album.album)}) | {top_album.album_plays}\n"
+                f"Top track: [{top_track.title}]({top_track.lfm_url}) | {top_track.track_plays}\n\n"
             )
 
             # move 1 day in the past to get the next day's info on next iteration
