@@ -750,7 +750,7 @@ class LastFM(commands.Cog):
         )
 
         # temporarily set thumbnail to get embed color the same as the first artist pic
-        embed.set_thumbnail(top_artist_urls[0])
+        embed.set_thumbnail(url=top_artist_urls[0])
         embed = update_embed_color(embed)
         embed.remove_thumbnail()
 
