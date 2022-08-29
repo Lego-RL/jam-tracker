@@ -584,7 +584,8 @@ class LastFM(commands.Cog):
                     embed.set_thumbnail(url=album_image_url)
                     embed = update_embed_color(embed)
 
-            albums_str += f"\n{i+1}) {album.album} - **{album.album_plays}** scrobbles"
+            album_link = f"https://www.last.fm/music/{'+'.join(album.artist.split(' '))}/{'+'.join(album.album.split(' '))}"
+            albums_str += f"\n{i+1}) [{album.album}]({album_link}) - **{album.album_plays}** scrobbles"
 
         embed.description = albums_str
 
@@ -852,6 +853,7 @@ class LastFM(commands.Cog):
             # get top artist on day
             top_artist: StrippedArtist = None
             top_track: StrippedTrack = None
+            top_album: StrippedAlbum = None
             try:
                 top_artist = get_x_top_artists(name, 1, lower_stamp, upper_stamp)[0]
 
@@ -870,14 +872,28 @@ class LastFM(commands.Cog):
                 )
                 continue
 
+            top_album = get_x_top_albums(name, 1, lower_stamp, upper_stamp)[0]
+
+            if i == 0:
+                if artist_image_url := get_artist_image_url(top_artist.artist):
+                    embed.set_thumbnail(url=artist_image_url)
+                    embed = update_embed_color(embed)
+
             discord_date_timestamp = f"<t:{int(lower_bound.timestamp())}:D>"
-            description += f"""\n{discord_date_timestamp}
-                                Top artist: {top_artist.artist} | {top_artist.artist_plays}
-                                Top track: {top_track.title} | {top_track.track_plays}\n"""
+            description += (
+                f"{discord_date_timestamp}\n"
+                f"Top artist: {top_artist.artist} | {top_artist.artist_plays}\n"
+                f"Top album: {top_album.album} | {top_album.album_plays}\n"
+                f"Top track: {top_track.title} | {top_track.track_plays}\n\n"
+            )
 
             # move 1 day in the past to get the next day's info on next iteration
             upper_bound = lower_bound
             lower_bound = lower_bound - datetime.timedelta(days=1)
+
+        if description == "":
+            await ctx.respond(f"No scrobble data for past {DAYS} to use!")
+            return
 
         embed.description = description
         await ctx.respond(embed=embed)

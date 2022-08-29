@@ -50,7 +50,14 @@ class StrippedArtist:
 class StrippedAlbum:
     def __init__(self, album: str, artist: str, album_plays: int):
         self.album = album
-        self.artist = artist
+
+        # fix album wrongly being attributed to Swedish House Mafia
+        if "Dawn FM" in self.album:
+            self.artist = "The Weeknd"
+
+        else:
+            self.artist = artist
+
         self.album_plays = album_plays
 
 
