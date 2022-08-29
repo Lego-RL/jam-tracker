@@ -90,7 +90,7 @@ def get_album_image_url(album: str, artist: str) -> str:
         retries=10,
     )
 
-    # spotify doesn't return pic for this album for some reason
+    # spotify doesn't return pic for alternate world
     if album == "Dawn FM (Alternate World)":
         album = "Dawn FM"
 

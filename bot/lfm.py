@@ -744,6 +744,18 @@ class LastFM(commands.Cog):
                 file=discord.File(fp=image_binary, filename=f"{user}_artist_chart.png")
             )
 
+        # send embed describing parameters
+        embed = discord.Embed(
+            title=f"Artist chart for {user if user else ctx.user} - {period.title()}"
+        )
+
+        # temporarily set thumbnail to get embed color the same as the first artist pic
+        embed.set_thumbnail(top_artist_urls[0])
+        embed = update_embed_color(embed)
+        embed.remove_thumbnail()
+
+        await ctx.send(embed)
+
     @has_set_lfm_user()
     @chart.command(name="albums", description="View a chart of your top albums. ")
     @option(
