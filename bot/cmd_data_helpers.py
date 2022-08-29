@@ -47,6 +47,13 @@ class StrippedArtist:
         self.artist_plays = artist_plays
 
 
+class StrippedAlbum:
+    def __init__(self, album: str, artist: str, album_plays: int):
+        self.album = album
+        self.artist = artist
+        self.album_plays = album_plays
+
+
 def generate_stripped_track(track: Scrobble, track_plays: int) -> StrippedTrack:
     """
     Generate a StrippedTrack object from a Scrobble object.
@@ -269,6 +276,60 @@ def get_x_top_artists(
             artist_obj: StrippedArtist = StrippedArtist(artist.artist, artist_plays)
 
             stripped_artists.append(artist_obj)
+
+    return stripped_artists
+
+
+def get_x_top_albums(
+    lfm_user: str,
+    num_albums: int = 10**100,
+    after_unix_timestamp: int = 0,
+    before_unix_timestamp=int(datetime.datetime.now().timestamp()),
+) -> list[StrippedAlbum]:
+    """
+    Return top x artists based on number of scrobbles the
+    user has for each artist.
+    """
+
+    stripped_artists: list[StrippedArtist] = []
+    with Session.begin() as session:
+        user_id_query = (
+            session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
+        )
+
+        albums: list[Scrobble] = (
+            session.query(Scrobble)
+            .filter_by(user_id=user_id_query.c.id)
+            .filter(Scrobble.unix_timestamp > after_unix_timestamp)
+            .filter(Scrobble.unix_timestamp < before_unix_timestamp)
+            .group_by(Scrobble.album)
+            .order_by(desc(func.count(Scrobble.album)))
+            .limit(num_albums)
+            .all()
+        )
+
+        if albums is None:
+            return None
+
+        for album in albums:
+            user_id_query = (
+                session.query(User.id).filter_by(last_fm_user=lfm_user).subquery()
+            )
+
+            album_plays = (
+                session.query(Scrobble)
+                .filter_by(user_id=user_id_query.c.id)
+                .filter_by(album=album.album)
+                .filter(Scrobble.unix_timestamp > after_unix_timestamp)
+                .filter(Scrobble.unix_timestamp < before_unix_timestamp)
+                .count()
+            )
+
+            album_obj: StrippedAlbum = StrippedAlbum(
+                album.album, album.artist, album_plays
+            )
+
+            stripped_artists.append(album_obj)
 
     return stripped_artists
 

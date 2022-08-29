@@ -25,14 +25,15 @@ from data_interface import (
 from image import combine_images, update_embed_color
 from io import BytesIO
 from main import LFM_API_KEY, LFM_API_SECRET
-from spotify import get_artist_image_url, get_track_image_url
+from spotify import get_artist_image_url, get_track_image_url, get_album_image_url
 from PIL import Image
 
-from cmd_data_helpers import StrippedTrack, StrippedArtist
+from cmd_data_helpers import StrippedTrack, StrippedArtist, StrippedAlbum
 from cmd_data_helpers import (
     get_x_recent_tracks,
     get_x_top_tracks,
     get_x_top_artists,
+    get_x_top_albums,
     get_relative_unix_timestamp,
     get_single_track_info,
     get_discord_relative_timestamp,
@@ -515,6 +516,95 @@ class LastFM(commands.Cog):
             )
         else:
             embed.set_author(name=f"{user.get_name()}'s Top 10 Tracks ({period})")
+
+        await ctx.respond(embed=embed)
+
+    @has_set_lfm_user()
+    @top.command(name="albums", description="See a list of your top ten albums.")
+    @option(
+        name="period",
+        type=str,
+        description="Decides the period of time to find your top albums for",
+        choices=CMD_TIME_CHOICES,
+        required=False,
+        default="overall",
+    )
+    async def top_albums(
+        self,
+        ctx: ApplicationContext,
+        user: discord.User = None,
+        period: str = "overall",
+    ) -> None:
+        """
+        Display the user's top 10 album, and how many scrobbles
+        the user has for each.
+        """
+
+        await ctx.defer()
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        discord_id = ctx.user.id if user is None else user.id
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
+
+        embed = discord.Embed(color=discord.Color.gold())
+        user: pylast.User = self.network.get_user(name)
+
+        lfm_period = PERIODS[period]
+        relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
+
+        # set to 0 since any song after unix time "0" includes all songs anyway
+        if relative_timestamp is None:
+            relative_timestamp = 0
+
+        stripped_albums: list[StrippedAlbum] = get_x_top_albums(
+            name, 10, relative_timestamp
+        )
+
+        if len(stripped_albums) == 0:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user has no scrobbles over the period of **{period}**!"
+            )
+            return
+
+        albums_str: str = str()
+        top_ten_scrobbles: int = 0
+        for i, album in enumerate(stripped_albums):
+            top_ten_scrobbles += album.album_plays
+
+            if i == 0:
+                album_image_url = get_album_image_url(album.album, album.artist)
+
+                if album_image_url:
+                    embed.set_thumbnail(url=album_image_url)
+                    embed = update_embed_color(embed)
+
+            albums_str += f"\n{i+1}) {album.album} - **{album.album_plays}** scrobbles"
+
+        embed.description = albums_str
+
+        percent_scrobbles = (
+            top_ten_scrobbles / get_number_user_scrobbles_stored(discord_id)
+        ) * 100
+
+        embed.set_footer(
+            text=f"These albums make up {percent_scrobbles:0.2f}% of {name}'s total scrobbles!"
+        )
+
+        image_url = user.get_image()
+
+        if image_url:
+            embed.set_author(
+                name=f"{user.get_name()}'s Top 10 Albums ({period})",
+                icon_url=image_url,
+            )
+        else:
+            embed.set_author(name=f"{user.get_name()}'s Top 10 Albums ({period})")
 
         await ctx.respond(embed=embed)
 

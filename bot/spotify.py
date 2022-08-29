@@ -77,6 +77,53 @@ def get_track_image_url(track: str, artist: str) -> str:
         return None
 
 
+def get_album_image_url(album: str, artist: str) -> str:
+    """
+    Returns the track's image URL, retrieved from Spotify.
+    """
+
+    client: spotipy.Spotify = spotipy.Spotify(
+        client_credentials_manager=SpotifyClientCredentials(
+            client_id=SPOTIPY_CLIENT_ID, client_secret=SPOTIPY_CLIENT_SECRET
+        ),
+        requests_timeout=10,
+        retries=10,
+    )
+
+    # spotify doesn't return pic for this album for some reason
+    if album in ["Dawn FM", "Dawn FM (Alternate World)"]:
+        return "https://upload.wikimedia.org/wikipedia/en/b/b9/The_Weeknd_-_Dawn_FM.png"
+
+    try:
+        if artist:
+            query: str = f"album:{album} artist:{artist}"
+
+        else:
+            query: str = f"album:{album}"
+
+        try:
+            search_info: dict = client.search(q=query, limit=1, type="album")
+
+        except urllib3.exceptions.HTTPError:
+
+            # sometimes urllib3 errors for no reason, best solution was to try once more?
+            search_info: dict = client.search(q=query, limit=1, type="album")
+
+        try:
+            album_info: dict = search_info["albums"]["items"][0]
+
+        except:
+            var = search_info["albums"]["items"]
+            print(f"{var=}")
+            return
+
+        return album_info["images"][0]["url"]
+
+    except Exception:
+        traceback.print_exc()
+        return None
+
+
 def get_track_info(track: str, artist: str = None) -> tuple:
     """
     Returns the track's title, album, and cover art url retrieved
@@ -115,4 +162,6 @@ def get_track_info(track: str, artist: str = None) -> tuple:
 
 
 if __name__ == "__main__":
-    print(get_track_info("the tradition", "halsey"))
+    pass
+    # print(get_track_info("the tradition", "halsey"))
+    # print(get_album_image_url("I Used To Think I Could Fly", "Tate Mcrae"))
