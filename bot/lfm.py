@@ -919,7 +919,7 @@ class LastFM(commands.Cog):
 
         # add only after checking if desc is empty to not trick it into thinking they had scrobble data
         description = (
-            f"Your daily top artist, album, and track respectively." + description
+            f"Your daily top artist, album, and track respectively.\n\n" + description
         )
 
         embed.description = description
