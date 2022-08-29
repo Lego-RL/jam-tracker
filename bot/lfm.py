@@ -746,7 +746,7 @@ class LastFM(commands.Cog):
 
         # send embed describing parameters
         embed = discord.Embed(
-            title=f"Artist chart for {user if user else ctx.user} - {period.title()}"
+            title=f"Artist chart for {user.mention if user else ctx.user.mention} - {period.title()}"
         )
 
         # temporarily set thumbnail to get embed color the same as the first artist pic
@@ -820,6 +820,17 @@ class LastFM(commands.Cog):
             await ctx.respond(
                 file=discord.File(fp=image_binary, filename=f"{user}_album_chart.png")
             )
+
+        embed = discord.Embed(
+            title=f"Album chart for {user.mention if user else ctx.user.mention} - {period.title()}"
+        )
+
+        # temporarily set thumbnail to get embed color the same as the first artist pic
+        embed.set_thumbnail(url=top_album_urls[0])
+        embed = update_embed_color(embed)
+        embed.remove_thumbnail()
+
+        await ctx.send(embed=embed)
 
     @slash_command(
         name="overview",
