@@ -683,7 +683,7 @@ class LastFM(commands.Cog):
         await ctx.respond(embed=embed)
 
     @has_set_lfm_user()
-    @chart.command(name="artist", description="View a chart of your top artists. ")
+    @chart.command(name="artists", description="View a chart of your top artists. ")
     @option(
         name="period",
         type=str,
@@ -706,7 +706,6 @@ class LastFM(commands.Cog):
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
         name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
-        discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
             await ctx.respond(
@@ -743,6 +742,71 @@ class LastFM(commands.Cog):
             image_binary.seek(0)
             await ctx.respond(
                 file=discord.File(fp=image_binary, filename=f"{user}_artist_chart.png")
+            )
+
+    @has_set_lfm_user()
+    @chart.command(name="albums", description="View a chart of your top albums. ")
+    @option(
+        name="period",
+        type=str,
+        description="Decides the period of time to find your top albums for",
+        choices=CMD_TIME_CHOICES,
+        required=False,
+        default="overall",
+    )
+    async def album_chart(
+        self,
+        ctx: ApplicationContext,
+        user: discord.User = None,
+        period: str = "overall",
+    ) -> None:
+        """
+        Displays a 3x3 chart of the user's top 9 albums.
+        """
+
+        await ctx.defer()
+
+        # if user supplied, set lfm_user to their last.fm username & return if they have none set
+        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
+
+        lfm_period = PERIODS[period]
+        relative_timestamp: int = get_relative_unix_timestamp(lfm_period)
+
+        if relative_timestamp is None:
+            relative_timestamp = 0
+
+        NUM_ALBUMS = 9
+        top_albums: list[StrippedAlbum] = get_x_top_albums(
+            name, NUM_ALBUMS + 5, relative_timestamp
+        )
+
+        top_album_urls: list[str] = []
+        top_album_names: list[str] = []
+        index: int = 0
+        while len(top_album_urls) < NUM_ALBUMS and index < len(top_albums):
+            album_name = top_albums[index].album
+            album_artist = top_albums[index].artist
+
+            if (
+                album_image_url := get_album_image_url(album_name, album_artist)
+            ) is not None:
+                top_album_urls.append(album_image_url)
+                top_album_names.append(album_name)
+            index += 1
+
+        pil_img_chart: Image = combine_images(top_album_names, top_album_urls)
+
+        with BytesIO() as image_binary:
+            pil_img_chart.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await ctx.respond(
+                file=discord.File(fp=image_binary, filename=f"{user}_album_chart.png")
             )
 
     @slash_command(
