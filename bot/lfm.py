@@ -905,8 +905,8 @@ class LastFM(commands.Cog):
             description += (
                 f"{discord_date_timestamp}\n"
                 f"`{top_artist.artist_plays}` plays - [{top_artist.artist}]({get_artist_lfm_link(top_artist.artist)})\n"
-                f"`{top_album.album_plays}` plays - [{top_album.album}]({get_album_lfm_link(top_album.artist, top_album.album)})\n"
-                f"`{top_track.track_plays}` plays - [{top_track.title}]({top_track.lfm_url})\n\n"
+                f"`{top_album.album_plays}` plays - [{top_album.artist}]({get_artist_lfm_link(top_album.artist)}) | [{top_album.album}]({get_album_lfm_link(top_album.artist, top_album.album)})\n"
+                f"`{top_track.track_plays}` plays - [{top_track.artist}]({get_artist_lfm_link(top_track.artist)}) | [{top_track.title}]({top_track.lfm_url})\n\n"
             )
 
             # move 1 day in the past to get the next day's info on next iteration
