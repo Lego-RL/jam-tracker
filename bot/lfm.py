@@ -754,7 +754,7 @@ class LastFM(commands.Cog):
         embed = update_embed_color(embed)
         embed.remove_thumbnail()
 
-        await ctx.send(embed)
+        await ctx.send(embed=embed)
 
     @has_set_lfm_user()
     @chart.command(name="albums", description="View a chart of your top albums. ")
