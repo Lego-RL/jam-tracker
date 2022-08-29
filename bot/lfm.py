@@ -746,7 +746,7 @@ class LastFM(commands.Cog):
 
         # send embed describing parameters
         embed = discord.Embed(
-            title=f"Artist chart for {user.mention if user else ctx.user.mention} - {period.title()}"
+            title=f"Artist chart for {user.name if user else ctx.user.name} - {period.title()}"
         )
 
         # temporarily set thumbnail to get embed color the same as the first artist pic
@@ -822,7 +822,7 @@ class LastFM(commands.Cog):
             )
 
         embed = discord.Embed(
-            title=f"Album chart for {user.mention if user else ctx.user.mention} - {period.title()}"
+            title=f"Album chart for {user.name if user else ctx.user.name} - {period.title()}"
         )
 
         # temporarily set thumbnail to get embed color the same as the first artist pic
