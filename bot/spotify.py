@@ -91,8 +91,8 @@ def get_album_image_url(album: str, artist: str) -> str:
     )
 
     # spotify doesn't return pic for this album for some reason
-    if album in ["Dawn FM", "Dawn FM (Alternate World)"]:
-        return "https://upload.wikimedia.org/wikipedia/en/b/b9/The_Weeknd_-_Dawn_FM.png"
+    if album == "Dawn FM (Alternate World)":
+        album = "Dawn FM"
 
     try:
         if artist:
@@ -164,4 +164,4 @@ def get_track_info(track: str, artist: str = None) -> tuple:
 if __name__ == "__main__":
     pass
     # print(get_track_info("the tradition", "halsey"))
-    # print(get_album_image_url("I Used To Think I Could Fly", "Tate Mcrae"))
+    print(get_album_image_url("Dawn FM (Alternate World)", "The Weeknd"))
