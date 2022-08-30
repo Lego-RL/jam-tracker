@@ -1013,17 +1013,6 @@ class LastFM(commands.Cog):
 
         await ctx.respond(f"Last 5 songs:\n{output}")
 
-    @commands.is_owner()
-    @slash_command(name="clear", description="Clear all scrobbles stored for Lego.")
-    async def remove_scrobbles(self, ctx: ApplicationContext) -> None:
-        """
-        Remove x scrobbles, for testing purposes.
-        """
-
-        clear_scrobbles()
-
-        await ctx.respond(f"Successfully cleared scrobbles.", ephemeral=True)
-
 
 def setup(bot: discord.Bot):
     bot.add_cog(LastFM(bot))
