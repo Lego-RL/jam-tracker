@@ -21,6 +21,7 @@ from data_interface import (
     get_lfm_username,
     get_lfm_username_update_data,
     get_number_user_scrobbles_stored,
+    clear_scrobbles,
 )
 from image import combine_images, update_embed_color
 from io import BytesIO
@@ -291,7 +292,7 @@ class LastFM(commands.Cog):
     @lfm.command(
         name="set", description="Set last.fm username to use for all last.fm commands."
     )
-    @commands.cooldown(1, (60 * 10), commands.BucketType.user)
+    # @commands.cooldown(1, (60 * 10), commands.BucketType.user)
     async def lfm_user_set(self, ctx: ApplicationContext, lfm_user: str) -> None:
         """
         Gets discord user's last.fm username to store for use with all
@@ -996,6 +997,45 @@ class LastFM(commands.Cog):
         else:
             print(f"o no, error!\n{error}\n{traceback.format_exc()}")
 
+    @commands.is_owner()
+    @slash_command(name="debug")
+    async def debug(self, ctx: ApplicationContext) -> None:
+        """
+        For debugging purposes, send recently stored scrobbles and their
+        timestamps.
+        """
+
+        tracks: StrippedTrack = get_x_recent_tracks("Lego_RL", 5)
+
+        output: str = ""
+
+        for track in tracks:
+            output += f"{track.title}: `{track.unix_timestamp}`\n"
+
+        await ctx.respond(f"Last 5 songs:\n{output}")
+
+    @commands.is_owner()
+    @slash_command(name="clear", description="Clear all scrobbles stored for Lego.")
+    async def remove_scrobbles(self, ctx: ApplicationContext) -> None:
+        """
+        Remove x scrobbles, for testing purposes.
+        """
+
+        clear_scrobbles()
+
+        await ctx.respond(f"Successfully cleared scrobbles.", ephemeral=True)
+
 
 def setup(bot: discord.Bot):
     bot.add_cog(LastFM(bot))
+
+
+if __name__ == "__main__":
+    network = pylast.LastFMNetwork(
+        api_key=LFM_API_KEY,
+        api_secret=LFM_API_SECRET,
+    )
+
+    me = network.get_user("Lego_RL")
+    recents = me.get_recent_tracks(None, False, time_from=1661836485)
+    print(recents)
