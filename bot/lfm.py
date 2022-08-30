@@ -21,7 +21,6 @@ from data_interface import (
     get_lfm_username,
     get_lfm_username_update_data,
     get_number_user_scrobbles_stored,
-    clear_scrobbles,
 )
 from image import combine_images, update_embed_color
 from io import BytesIO
