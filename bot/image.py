@@ -29,6 +29,7 @@ def update_embed_color(embed: discord.Embed) -> discord.Embed:
     """
 
     if (image_url := embed.thumbnail.url) is not None:
+        print(f"{image_url=}")
         rgb: tuple = get_dominant_color(image_url)
         color = discord.Color.from_rgb(*rgb)
         embed.color = color
