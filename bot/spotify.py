@@ -68,9 +68,14 @@ def get_track_image_url(track: str, artist: str) -> str:
             # sometimes urllib3 errors for no reason, best solution was to try once more?
             search_info: dict = client.search(q=query, limit=1, type="track")
 
-        track_info: dict = search_info["tracks"]["items"][0]
+        try:
+            track_info: dict = search_info["tracks"]["items"][0]
 
-        return track_info["album"]["images"][0]["url"]
+            return track_info["album"]["images"][0]["url"]
+
+        # no image available
+        except IndexError:
+            return None
 
     except Exception:
         traceback.print_exc()
