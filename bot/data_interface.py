@@ -1,14 +1,7 @@
 import traceback
 import discord
 import pylast
-from sqlalchemy import (
-    Column,
-    ForeignKey,
-    Integer,
-    String,
-    create_engine,
-    func,
-)
+from sqlalchemy import Column, ForeignKey, Integer, String, create_engine, func
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 import os
@@ -220,12 +213,14 @@ def get_number_user_scrobbles_stored(discord_id: int) -> int:
     """
 
     with Session.begin() as session:
-        user: User = session.query(User).filter_by(discord_id=discord_id).first()
+        count: int = (
+            session.query(User)
+            .join(User.scrobble_entries)
+            .filter(User.discord_id == discord_id)
+            .count()
+        )
 
-        if not user:
-            return 0
-
-        return len(user.scrobble_entries)
+    return count
 
 
 def check_recent_track_stored(user: pylast.User, discord_id: int) -> bool:

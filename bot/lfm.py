@@ -19,7 +19,7 @@ from data_interface import (
     update_user,
     retrieve_lfm_username,
     get_lfm_username,
-    get_lfm_username_update_data,
+    get_lfm_username,
     get_number_user_scrobbles_stored,
 )
 from image import combine_images, update_embed_color
@@ -115,17 +115,20 @@ class LastFM(commands.Cog):
 
         await ctx.defer()
 
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        user_id = ctx.user.id if user is None else user.id
 
-        if name is None:
-            await ctx.respond(
-                f"{ctx.user.mention}, this user does not have a last.fm username set!"
-            )
-            return
+        # name: str = get_lfm_username(self.network, ctx.user.id, user)
 
-        num_scrobbles = get_number_user_scrobbles_stored(ctx.user.id)
+        # if name is None:
+        #     await ctx.respond(
+        #         f"{ctx.user.mention}, this user does not have a last.fm username set!"
+        #     )
+        #     return
 
-        await ctx.respond(f"{name} has **{num_scrobbles}** total scrobbles!")
+        num_scrobbles = get_number_user_scrobbles_stored(user_id)
+
+        # await ctx.respond(f"{name} has **{num_scrobbles}** total scrobbles!")
+        await ctx.respond(f"u has **{num_scrobbles}** total scrobbles!")
 
     @has_set_lfm_user()
     @slash_command(name="now")
@@ -204,7 +207,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -361,7 +364,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
         discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
@@ -453,7 +456,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
         discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
@@ -542,7 +545,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
         discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
@@ -622,7 +625,7 @@ class LastFM(commands.Cog):
         """
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id)
+        name: str = get_lfm_username(ctx.user.id, user)
         discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
@@ -705,7 +708,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -779,7 +782,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
         if name is None:
             await ctx.respond(
@@ -848,7 +851,7 @@ class LastFM(commands.Cog):
         await ctx.defer()
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
-        name: str = get_lfm_username_update_data(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
         # discord_id = ctx.user.id if user is None else user.id
 
         if name is None:
