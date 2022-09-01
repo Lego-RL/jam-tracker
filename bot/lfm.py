@@ -273,12 +273,10 @@ class LastFM(commands.Cog):
                 break
 
             if not embed.thumbnail.url and i == 0:
-                try:
-                    cover_image_url = get_track_image_url(song.title, song.artist)
+                if (
+                    cover_image_url := get_track_image_url(song.title, song.artist)
+                ) is not None:
                     embed.set_thumbnail(url=cover_image_url)
-
-                except Exception as e:
-                    traceback.format_exc()
 
             embed_string += f"{i+number_offset}) **[{song.title}]({song.lfm_url})** - {song.artist}\n"
             embed_string += f"{song.album} | {song.track_plays} scrobbles\n\n"
