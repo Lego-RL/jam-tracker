@@ -5,6 +5,7 @@ import discord
 import discord.commands
 from discord import ApplicationContext, Bot
 from discord.commands import slash_command, SlashCommandGroup, option
+from discord.embeds import _EmptyEmbed
 from discord.ext import commands, tasks
 
 from discord import CheckFailure
@@ -1060,6 +1061,44 @@ class LastFM(commands.Cog):
 
         else:
             print(f"o no, error!\n{error}\n{traceback.format_exc()}")
+
+    @slash_command(name="help", description="See a list of available commands!")
+    async def help(self, ctx: ApplicationContext) -> None:
+        """
+        Send embed listing Jam Tracker's commands.
+        """
+
+        embed: discord.Embed = discord.Embed(title="Jam Tracker Commands")
+        embed.set_thumbnail(url=ctx.user.avatar.url)
+        embed = update_embed_color(embed)
+
+        embed.set_footer(text="Thank you for using Jam Tracker! - Lego#0469")
+
+        common_cmd_desc: str = """
+            **Overview** - see your top artist, albums and genres by day.
+            **Recent** - see the last 5 tracks you listened to
+            **Now** - see the song you're currently listening to.
+            **Scrobbles** - see how many scrobbles you have.
+            """
+
+        embed.add_field(name="Common commands", value=common_cmd_desc, inline=False)
+
+        top_cmd_desc: str = """
+            **Artist** - see your top artists for a given period
+            **Album** - see your top albums for a given period
+            **Track** - see your tp track for a given period
+            """
+
+        embed.add_field(name="/Top Command Group", value=top_cmd_desc, inline=False)
+
+        chart_cmd_desc: str = """
+        **Artist** - see a 3x3 chart of your top artists for a given period
+        **Album**- see a 3x3 chart of your top albums for a given period
+        """
+
+        embed.add_field(name="/Chart Command Group", value=chart_cmd_desc, inline=False)
+
+        await ctx.respond(embed=embed, ephemeral=True)
 
     # @commands.is_owner()
     # @slash_command(name="debug")
