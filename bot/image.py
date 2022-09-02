@@ -30,7 +30,6 @@ def update_embed_color(embed: discord.Embed) -> discord.Embed:
 
     # why does embed.thumbnail.url return string 'None'??
     if (image_url := embed.thumbnail.url) not in [None, "None", discord.Embed.Empty]:
-        print(f"{image_url=}")
         rgb: tuple = get_dominant_color(image_url)
         color = discord.Color.from_rgb(*rgb)
         embed.color = color

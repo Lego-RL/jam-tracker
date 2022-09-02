@@ -119,7 +119,6 @@ def get_album_image_url(album: str, artist: str) -> str:
 
         except:
             var = search_info["albums"]["items"]
-            print(f"{var=}")
             return
 
         return album_info["images"][0]["url"]

@@ -259,8 +259,6 @@ def update_user_scrobbles(
             unstored_scrobbles: Generator[pylast.PlayedTrack] = user.get_recent_tracks(
                 limit=None, time_from=initial_timestamp, stream=True
             )
-            # TODO: remove once scrobble grabbing error is fixed
-            print(f"storing from time {initial_timestamp}")
 
         else:
             unstored_scrobbles: Generator[pylast.PlayedTrack] = user.get_recent_tracks(
@@ -336,3 +334,26 @@ def get_lfm_username_update_data(
             update_user_scrobbles(network, invoker_id, lfm_user)
 
         return lfm_user
+
+
+def get_total_scrobbles() -> int:
+    """
+    Return the total number of all scrobbles
+    currently stored in the database.
+    """
+
+    with Session.begin() as session:
+        num_scrobbles: int = session.query(func.count(Scrobble.id)).scalar()
+
+    return num_scrobbles
+
+def get_total_users() -> int:
+    """
+    Return the total number of all users
+    currently stored in the database.
+    """
+
+    with Session.begin() as session:
+        num_users: int = session.query(func.count(User.id)).scalar()
+
+    return num_users

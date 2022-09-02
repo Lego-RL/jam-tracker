@@ -1,10 +1,11 @@
+from asyncio import tasks
 import traceback
 
 import discord
 import discord.commands
-from discord import ApplicationContext
+from discord import ApplicationContext, Bot
 from discord.commands import slash_command, SlashCommandGroup, option
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from discord import CheckFailure
 from discord.ext.commands.errors import CommandOnCooldown
@@ -12,6 +13,8 @@ from discord.ext.commands.errors import CommandOnCooldown
 import pylast
 
 import datetime
+from enum import Enum
+from random import choice
 import requests
 
 from data_interface import (
@@ -21,6 +24,8 @@ from data_interface import (
     get_lfm_username,
     get_lfm_username,
     get_number_user_scrobbles_stored,
+    get_total_scrobbles,
+    get_total_users,
 )
 from image import combine_images, update_embed_color
 from io import BytesIO
@@ -62,6 +67,11 @@ CMD_TIME_CHOICES = list(PERIODS.keys())
 BLOB_JAMMIN: str = "<a:blobjammin:988683824860921857>"  # emote
 
 
+class Status(Enum):
+    INFO = 1
+    HELP = 2
+
+
 def has_set_lfm_user():
     """
     Decorator to check if discord user
@@ -80,11 +90,14 @@ def has_set_lfm_user():
 class LastFM(commands.Cog):
     def __init__(self, bot):
         self.bot: discord.Bot = bot
+        self.status = None
 
         self.network = pylast.LastFMNetwork(
             api_key=LFM_API_KEY,
             api_secret=LFM_API_SECRET,
         )
+
+        self.change_status.start()
 
     lfm = SlashCommandGroup(
         "lfm",
@@ -105,6 +118,37 @@ class LastFM(commands.Cog):
         "pfp",
         "Commands related to the bot's profile picture!",
     )
+
+    @tasks.loop(minutes=1)
+    async def change_status(self):
+        """
+        Change the bots status every minute.
+        """
+
+        if self.status is None:
+            self.status = choice([x for x in Status])
+
+        else:
+            self.status = choice([x for x in Status if x != self.status])
+
+        match self.status:
+            case Status.INFO:
+                num_users: int = get_total_users()
+                num_scrobbles: int = get_total_scrobbles()
+
+                NEW_STATUS: str = f"{num_scrobbles} songs heard by {num_users} users!"
+
+            case Status.HELP:
+                NEW_STATUS: str = "Use /help to learn what the bot can do!"
+
+        await self.bot.change_presence(
+            activity=discord.Game(name=NEW_STATUS),
+            status=discord.Status.online,
+        )
+
+    @change_status.before_loop
+    async def before_change_status(self):
+        await self.bot.wait_until_ready()
 
     @has_set_lfm_user()
     @slash_command(name="scrobbles")
