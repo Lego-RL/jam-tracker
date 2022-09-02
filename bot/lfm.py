@@ -796,13 +796,6 @@ class LastFM(commands.Cog):
 
         pil_img_chart: Image = combine_images(top_artist_names, top_artist_urls)
 
-        with BytesIO() as image_binary:
-            pil_img_chart.save(image_binary, "PNG")
-            image_binary.seek(0)
-            await ctx.respond(
-                file=discord.File(fp=image_binary, filename=f"{user}_artist_chart.png")
-            )
-
         # send embed describing parameters
         embed = discord.Embed(
             title=f"Artist chart for {user.name if user else ctx.user.name} - {period.title()}"
@@ -813,7 +806,15 @@ class LastFM(commands.Cog):
         embed = update_embed_color(embed)
         embed.remove_thumbnail()
 
-        await ctx.send(embed=embed)
+        with BytesIO() as image_binary:
+            pil_img_chart.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await ctx.respond(
+                file=discord.File(fp=image_binary, filename=f"{user}_artist_chart.png"),
+                embed=embed,
+            )
+
+        # await ctx.send(embed=embed)
 
     @has_set_lfm_user()
     @chart.command(name="albums", description="View a chart of your top albums. ")
