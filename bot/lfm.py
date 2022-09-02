@@ -131,15 +131,14 @@ class LastFM(commands.Cog):
         else:
             self.status = choice([x for x in Status if x != self.status])
 
-        match self.status:
-            case Status.INFO:
-                num_users: int = get_total_users()
-                num_scrobbles: int = get_total_scrobbles()
+        if self.status == Status.INFO:
+            num_users: int = get_total_users()
+            num_scrobbles: int = get_total_scrobbles()
 
-                NEW_STATUS: str = f"{num_scrobbles} songs heard by {num_users} users!"
+            NEW_STATUS: str = f"{num_scrobbles} songs heard by {num_users} users!"
 
-            case Status.HELP:
-                NEW_STATUS: str = "Use /help to learn what the bot can do!"
+        elif self.status == Status.HELP:
+            NEW_STATUS: str = "Use /help to learn what the bot can do!"
 
         await self.bot.change_presence(
             activity=discord.Game(name=NEW_STATUS),
