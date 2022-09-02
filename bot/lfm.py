@@ -356,9 +356,22 @@ class LastFM(commands.Cog):
 
         result: bool = store_user(ctx.user.id, lfm_user)
 
+        profile_link: str = f"https://www.last.fm/user/{lfm_user}"
+        footer_msg: str = "It may take several minutes to collect all your scrobbles!"
+
+        embed: discord.Embed = discord.Embed(title=lfm_user, url=profile_link)
+        embed.set_footer(text=footer_msg)
+
+        embed.set_thumbnail(url=ctx.user.avatar.url)
+        embed = update_embed_color(embed)
+
         if result:
+
+            embed.description = (
+                f"Successfully stored `{lfm_user}` as your last.fm account!"
+            )
             await ctx.respond(
-                f"Successfully stored `{lfm_user}` as your last.fm account!",
+                embed=embed,
                 ephemeral=True,
             )
         else:
@@ -366,8 +379,11 @@ class LastFM(commands.Cog):
 
             # successful update
             if update_result:
+                embed.description = (
+                    f"Successfully updated your stored last.fm account to `{lfm_user}`!"
+                )
                 await ctx.respond(
-                    f"Successfully updated your stored last.fm account to `{lfm_user}`!",
+                    embed=embed,
                     ephemeral=True,
                 )
 
@@ -1039,22 +1055,22 @@ class LastFM(commands.Cog):
         else:
             print(f"o no, error!\n{error}\n{traceback.format_exc()}")
 
-    @commands.is_owner()
-    @slash_command(name="debug")
-    async def debug(self, ctx: ApplicationContext) -> None:
-        """
-        For debugging purposes, send recently stored scrobbles and their
-        timestamps.
-        """
+    # @commands.is_owner()
+    # @slash_command(name="debug")
+    # async def debug(self, ctx: ApplicationContext) -> None:
+    #     """
+    #     For debugging purposes, send recently stored scrobbles and their
+    #     timestamps.
+    #     """
 
-        tracks: StrippedTrack = get_x_recent_tracks("Lego_RL", 5)
+    #     tracks: StrippedTrack = get_x_recent_tracks("Lego_RL", 5)
 
-        output: str = ""
+    #     output: str = ""
 
-        for track in tracks:
-            output += f"{track.title}: `{track.unix_timestamp}`\n"
+    #     for track in tracks:
+    #         output += f"{track.title}: `{track.unix_timestamp}`\n"
 
-        await ctx.respond(f"Last 5 songs:\n{output}")
+    #     await ctx.respond(f"Last 5 songs:\n{output}")
 
 
 def setup(bot: discord.Bot):
