@@ -160,18 +160,17 @@ class LastFM(commands.Cog):
 
         user_id = ctx.user.id if user is None else user.id
 
-        # name: str = get_lfm_username(self.network, ctx.user.id, user)
+        name: str = get_lfm_username(ctx.user.id, user)
 
-        # if name is None:
-        #     await ctx.respond(
-        #         f"{ctx.user.mention}, this user does not have a last.fm username set!"
-        #     )
-        #     return
+        if name is None:
+            await ctx.respond(
+                f"{ctx.user.mention}, this user does not have a last.fm username set!"
+            )
+            return
 
         num_scrobbles = get_number_user_scrobbles_stored(user_id)
 
-        # await ctx.respond(f"{name} has **{num_scrobbles}** total scrobbles!")
-        await ctx.respond(f"u has **{num_scrobbles}** total scrobbles!")
+        await ctx.respond(f"{name} has **{num_scrobbles}** total scrobbles!")
 
     @has_set_lfm_user()
     @slash_command(name="now")
