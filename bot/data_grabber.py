@@ -41,7 +41,7 @@ network = pylast.LastFMNetwork(
 )
 
 
-def track_to_scrobble(track: dict) -> Scrobble | None:
+def track_to_scrobble(track: dict) -> Scrobble:
     """
     Takes a track from last.fm's API
     and returns a Scrobble object.
@@ -136,7 +136,7 @@ def get_scrobble_objs_from_page(page: dict) -> None:
     of the last.fm API.
     """
 
-    tracks: list[dict] | dict = page["recenttracks"]["track"]
+    tracks: list[dict] = page["recenttracks"]["track"]
 
     # no new tracks on page
     if tracks == []:
