@@ -325,8 +325,6 @@ class LastFM(commands.Cog):
 
             playcount: int = track.get_userplaycount()
 
-            print(f"{self.network.username=}, {playcount=}")
-
             embed_string += f"{i+number_offset}) **[{track.title}]({track.get_url()})** - {track.artist}\n"
             embed_string += f"{song.album} | {playcount} scrobbles\n\n"
 
