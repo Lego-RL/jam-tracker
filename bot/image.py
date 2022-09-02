@@ -54,6 +54,9 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
     updated_imgs: list = []
     # write text over every image
     for artist_name, image in zip(top_artist_names, images):
+
+        if "(Extended Version)" in artist_name:
+            artist_name = artist_name[: artist_name.index("(Extended Version)")]
         draw = ImageDraw.Draw(image)
 
         FONT_SIZE = 40
