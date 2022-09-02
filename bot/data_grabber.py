@@ -8,10 +8,6 @@ import os
 from platform import system
 import time
 
-import math
-
-import json
-from pprint import pprint
 import requests
 import schedule
 
@@ -21,7 +17,6 @@ from data_interface import (
     Scrobble,
     get_number_user_scrobbles_stored,
     get_last_stored_timestamp,
-    store_scrobbles,
 )
 from main import LFM_API_KEY, LFM_API_SECRET
 
@@ -100,6 +95,10 @@ def retrieve_page(
         params.append(f"&to={from_timestamp}")
 
     data: dict = requests.get(base_str + "".join(params)).json()
+
+    # request failed (last.fm api may be down) in this case
+    if data.get("recenttracks", None) is None:
+        return None
 
     return data
 
@@ -192,6 +191,11 @@ def update_all_user_scrobbles() -> None:
             # need to store all of user's scrobbles
             if local_scrobbles == 0:
                 page: dict = retrieve_page(user.last_fm_user, page_num=1)
+
+                # request failed
+                if page is None:
+                    continue
+
                 total_pages: int = get_total_pages(page)
 
                 scrobbles: list[Scrobble] = get_scrobble_objs_from_page(page)
@@ -206,6 +210,10 @@ def update_all_user_scrobbles() -> None:
                 page: dict = retrieve_page(
                     user.last_fm_user, from_timestamp=last_scrobble_time + 1, page_num=1
                 )
+
+                if page is None:
+                    continue
+
                 total_pages: int = get_total_pages(page)
 
                 # no new tracks to store
@@ -223,6 +231,10 @@ def update_all_user_scrobbles() -> None:
                             from_timestamp=last_scrobble_time + 1,
                             page_num=i,
                         )
+
+                        if page is None:
+                            continue
+
                         scrobbles: list[Scrobble] = get_scrobble_objs_from_page(page)
                         store_scrobble_objs(user.last_fm_user, scrobbles)
 
