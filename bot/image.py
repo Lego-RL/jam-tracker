@@ -3,6 +3,7 @@ from math import sqrt
 
 import discord
 from PIL import Image, ImageDraw, ImageFont
+import textwrap
 import requests
 
 
@@ -55,11 +56,14 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
     for artist_name, image in zip(top_artist_names, images):
         draw = ImageDraw.Draw(image)
 
-        if len(artist_name) < 20:
-            FONT_SIZE: int = 52
+        FONT_SIZE = 44
 
-        else:
-            FONT_SIZE: int = 40
+        if len(artist_name) < 20:
+            artist_name: str = textwrap.wrap(artist_name, width=20)
+        #     FONT_SIZE: int = 52
+
+        # else:
+        #     FONT_SIZE: int = 40
 
         font = ImageFont.truetype("Roboto-Bold.ttf", FONT_SIZE)
         text_width, text_height = draw.textsize(artist_name, font=font)
