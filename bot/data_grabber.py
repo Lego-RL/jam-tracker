@@ -6,9 +6,12 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 
 import os
 from platform import system
+import time
+
+import math
 
 import schedule
-import time
+
 
 from data_interface import (
     User,
@@ -65,6 +68,16 @@ def update_all_user_scrobbles() -> None:
                 )
             else:
                 last_scrobble_time = 0
+
+            if last_scrobble_time == 0:
+                for _ in range(math.ceil(lfm_scrobbles / 100)):
+                    new_scrobbles: list[
+                        pylast.PlayedTrack
+                    ] = lfm_user.get_recent_tracks(100, time_from=last_scrobble_time)
+
+                    store_scrobbles(user.discord_id, new_scrobbles)
+                    last_scrobble_time = new_scrobbles[-1].timestamp + 1
+                return
 
             new_scrobbles: list[pylast.PlayedTrack] = lfm_user.get_recent_tracks(
                 None, time_from=last_scrobble_time, stream=False
