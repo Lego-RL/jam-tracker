@@ -55,14 +55,19 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
     # write text over every image
     for artist_name, image in zip(top_artist_names, images):
 
-        if "(Extended Version)" in artist_name:
-            artist_name = artist_name[: artist_name.index("(Extended Version)")]
+        # cut off extended from album name to save space
+        img_text = (
+            artist_name
+            if "(Extended)" not in artist_name
+            else artist_name.split("(Extended)")[0]
+        )
         draw = ImageDraw.Draw(image)
 
         FONT_SIZE = 40
 
-        font = ImageFont.truetype("Roboto-Bold.ttf", FONT_SIZE)
-        text_width, text_height = draw.textsize(artist_name, font=font)
+        font = ImageFont.truetype("arial.ttf", FONT_SIZE)
+        # font = ImageFont.truetype("Roboto-Bold.ttf", FONT_SIZE)
+        text_width, text_height = draw.textsize(img_text, font=font)
 
         # make black background rectangle behind text
         rectangle_size = (text_width + 20, text_height + 20)
@@ -79,7 +84,7 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
         )
         draw.text(
             (((w - rectangle_size[0]) // 2) + 10, (h - 85)),
-            artist_name,
+            img_text,
             font=font,
         )
 
