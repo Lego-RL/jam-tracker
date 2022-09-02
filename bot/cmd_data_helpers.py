@@ -186,7 +186,7 @@ def get_x_top_tracks(
     # arbitrarily large number to represent no limit if not given a limit
     num_tracks: int = 10**100,
     after_unix_timestamp: int = 0,
-    before_unix_timestamp=int(datetime.datetime.now().timestamp()),
+    before_unix_timestamp: int = 2147483647,  # max unix time
 ) -> list[StrippedTrack]:
     """
     Return top x tracks based on number of scrobbles the
@@ -239,7 +239,7 @@ def get_x_top_artists(
     lfm_user: str,
     num_artists: int = 10**100,
     after_unix_timestamp: int = 0,
-    before_unix_timestamp=int(datetime.datetime.now().timestamp()),
+    before_unix_timestamp: int = 2147483647,
 ) -> list[StrippedArtist]:
     """
     Return top x artists based on number of scrobbles the
