@@ -250,6 +250,11 @@ class LastFM(commands.Cog):
 
         # if user supplied, set lfm_user to their last.fm username & return if they have none set
         name: str = get_lfm_username(ctx.user.id, user)
+        user: pylast.User = self.network.get_user(name)
+
+        # for some reason, track.get_userplaycount()implicitly uses
+        # self.network.username so i suppose i have to set this for each user
+        self.network.username = name
 
         if name is None:
             await ctx.respond(
@@ -257,22 +262,18 @@ class LastFM(commands.Cog):
             )
             return
 
-        stripped_tracks: list[StrippedTrack] = get_x_recent_tracks(name, 5)
-
-        if len(stripped_tracks) == 0:
-            await ctx.respond(f"{ctx.user.mention}, this user has no scrobbled tracks!")
-            return
-
-        user: pylast.User = self.network.get_user(name)
-
         now_playing: pylast.Track = user.get_now_playing()
-        num_get = (
+        track_limit = (
             4 if now_playing else 5
         )  # only get 4 tracks if user is already playing a 5th
 
-        embed = discord.Embed(
-            color=discord.Color.gold(),
-        )
+        tracks: list[pylast.PlayedTrack] = user.get_recent_tracks(limit=track_limit)
+
+        if len(tracks) == 0:
+            await ctx.respond(f"{ctx.user.mention}, this user has no scrobbled tracks!")
+            return
+
+        embed = discord.Embed()
 
         image_url = user.get_image()
 
@@ -310,18 +311,24 @@ class LastFM(commands.Cog):
             number_offset: int = 1
             cover_image: str = None
 
-        for i, song in enumerate(stripped_tracks):
+        for i, song in enumerate(tracks):
             if number_offset == 2 and i == 4:
                 break
 
+            track: pylast.Track = song.track
+
             if not embed.thumbnail.url and i == 0:
                 if (
-                    cover_image_url := get_track_image_url(song.title, song.artist)
+                    cover_image_url := get_track_image_url(track.title, track.artist)
                 ) is not None:
                     embed.set_thumbnail(url=cover_image_url)
 
-            embed_string += f"{i+number_offset}) **[{song.title}]({song.lfm_url})** - {song.artist}\n"
-            embed_string += f"{song.album} | {song.track_plays} scrobbles\n\n"
+            playcount: int = track.get_userplaycount()
+
+            print(f"{self.network.username=}, {playcount=}")
+
+            embed_string += f"{i+number_offset}) **[{track.title}]({track.get_url()})** - {track.artist}\n"
+            embed_string += f"{song.album} | {playcount} scrobbles\n\n"
 
         embed.description = embed_string
         embed.set_footer(
