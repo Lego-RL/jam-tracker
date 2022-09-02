@@ -76,7 +76,7 @@ def update_all_user_scrobbles() -> None:
                     ] = lfm_user.get_recent_tracks(100, time_from=last_scrobble_time)
 
                     store_scrobbles(user.discord_id, new_scrobbles)
-                    last_scrobble_time = new_scrobbles[-1].timestamp + 1
+                    last_scrobble_time = int(new_scrobbles[-1].timestamp) + 1
                 return
 
             new_scrobbles: list[pylast.PlayedTrack] = lfm_user.get_recent_tracks(
