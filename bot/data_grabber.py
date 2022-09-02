@@ -70,6 +70,12 @@ def update_all_user_scrobbles() -> None:
                 None, time_from=last_scrobble_time, stream=False
             )
 
+            if len(new_scrobbles) == 0:
+                print(
+                    f"error collecting new scrobbles for {user.last_fm_user} using {last_scrobble_time=}"
+                )
+                continue
+
             print(f"{last_scrobble_time=}")
             if len(new_scrobbles) < 5:
                 for scrobble in new_scrobbles:
@@ -83,13 +89,9 @@ def update_all_user_scrobbles() -> None:
             print(
                 f"fetched {len(new_scrobbles)} for user {user.last_fm_user} in {end_time-start_time} seconds"
             )
-            # print(
-            #     f"fetched scrobbles for user {user.last_fm_user} in {end_time-start_time} seconds"
-            # )
 
 
 schedule.every(1).minutes.do(update_all_user_scrobbles)
-# schedule.every(30).seconds.do(update_all_user_scrobbles)
 
 while True:
     schedule.run_pending()
