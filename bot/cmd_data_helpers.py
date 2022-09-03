@@ -398,3 +398,21 @@ def get_album_lfm_link(artist: str, album: str) -> str:
     album_portion: str = "+".join(album.split(" "))
 
     return f"https://www.last.fm/music/{artist_portion}/{album_portion}"
+
+
+def retrieve_all_lfm_names() -> list[tuple[str, int]]:
+    """
+    Return a list of tuples representing each user's
+    last.fm username, along with their discord id.
+    """
+
+    with Session.begin() as session:
+        users: list[tuple[str, int]] = session.query(
+            User.last_fm_user, User.discord_id
+        ).all()
+
+        return users
+
+
+if __name__ == "__main__":
+    print(retrieve_all_lfm_names())

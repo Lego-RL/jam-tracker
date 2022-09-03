@@ -44,6 +44,7 @@ from cmd_data_helpers import (
     get_relative_unix_timestamp,
     get_single_track_info,
     get_discord_relative_timestamp,
+    retrieve_all_lfm_names,
 )
 
 guilds = [
@@ -1117,17 +1118,30 @@ class LastFM(commands.Cog):
 
         await ctx.respond(f"Last 5 songs:\n{output}")
 
+    @commands.is_owner()
+    @slash_command(name="users", guild_ids=[315782312476409867])
+    async def users(self, ctx: ApplicationContext) -> None:
+        """
+        Display all stored users & their local scrobble counts.
+        """
+
+        users: list[tuple[str, int]] = retrieve_all_lfm_names()
+
+        # make embed pretty even tho i'm the only one that'll ever see it
+        embed: discord.Embed = discord.Embed(title="Stored Users")
+        embed.set_thumbnail(url=ctx.user.avatar.url)
+        embed = update_embed_color(embed)
+
+        description: str = ""
+        for i, user in enumerate(users):
+            lfm_user, discord_id = user
+            user_scrobbles: int = get_number_user_scrobbles_stored(discord_id)
+
+            description += f"{i+1}: **{lfm_user}** - `{user_scrobbles}`"
+
+        embed.description = description
+        await ctx.respond(embed=embed)
+
 
 def setup(bot: discord.Bot):
     bot.add_cog(LastFM(bot))
-
-
-if __name__ == "__main__":
-    network = pylast.LastFMNetwork(
-        api_key=LFM_API_KEY,
-        api_secret=LFM_API_SECRET,
-    )
-
-    me = network.get_user("Lego_RL")
-    recents = me.get_recent_tracks(None, False, time_from=1661836485)
-    print(recents)
