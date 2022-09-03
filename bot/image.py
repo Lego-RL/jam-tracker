@@ -65,8 +65,7 @@ def combine_images(top_artist_names: list[str], image_urls: list[str]) -> Image:
 
         FONT_SIZE = 40
 
-        font = ImageFont.truetype("arial.ttf", FONT_SIZE)
-        # font = ImageFont.truetype("Roboto-Bold.ttf", FONT_SIZE)
+        font = ImageFont.truetype("Roboto-Bold.ttf", FONT_SIZE)
         text_width, text_height = draw.textsize(img_text, font=font)
 
         # make black background rectangle behind text
