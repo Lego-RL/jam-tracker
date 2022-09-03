@@ -1100,22 +1100,22 @@ class LastFM(commands.Cog):
 
         await ctx.respond(embed=embed, ephemeral=True)
 
-    # @commands.is_owner()
-    # @slash_command(name="debug")
-    # async def debug(self, ctx: ApplicationContext) -> None:
-    #     """
-    #     For debugging purposes, send recently stored scrobbles and their
-    #     timestamps.
-    #     """
+    @commands.is_owner()
+    @slash_command(name="debug", guild_ids=[315782312476409867])
+    async def debug(self, ctx: ApplicationContext) -> None:
+        """
+        For debugging purposes, send recently stored scrobbles and their
+        timestamps.
+        """
 
-    #     tracks: StrippedTrack = get_x_recent_tracks("Lego_RL", 5)
+        tracks: StrippedTrack = get_x_recent_tracks("Lego_RL", 5)
 
-    #     output: str = ""
+        output: str = ""
 
-    #     for track in tracks:
-    #         output += f"{track.title}: `{track.unix_timestamp}`\n"
+        for track in tracks:
+            output += f"{track.title}: `{track.unix_timestamp}`\n"
 
-    #     await ctx.respond(f"Last 5 songs:\n{output}")
+        await ctx.respond(f"Last 5 songs:\n{output}")
 
 
 def setup(bot: discord.Bot):
