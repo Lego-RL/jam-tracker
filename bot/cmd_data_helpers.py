@@ -412,7 +412,3 @@ def retrieve_all_lfm_names() -> list[tuple[str, int]]:
         ).all()
 
         return users
-
-
-if __name__ == "__main__":
-    print(retrieve_all_lfm_names())
