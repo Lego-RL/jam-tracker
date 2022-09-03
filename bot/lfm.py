@@ -1137,7 +1137,7 @@ class LastFM(commands.Cog):
             lfm_user, discord_id = user
             user_scrobbles: int = get_number_user_scrobbles_stored(discord_id)
 
-            description += f"{i+1}: **{lfm_user}** - `{user_scrobbles}`"
+            description += f"{i+1}: **{lfm_user}** - `{user_scrobbles}`\n"
 
         embed.description = description
         await ctx.respond(embed=embed)
