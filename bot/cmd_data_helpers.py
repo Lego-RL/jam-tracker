@@ -291,7 +291,7 @@ def get_x_top_albums(
     lfm_user: str,
     num_albums: int = 10**100,
     after_unix_timestamp: int = 0,
-    before_unix_timestamp=int(datetime.datetime.now().timestamp()),
+    before_unix_timestamp: int = 2147483647,
 ) -> list[StrippedAlbum]:
     """
     Return top x artists based on number of scrobbles the
