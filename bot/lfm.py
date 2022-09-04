@@ -348,6 +348,8 @@ class LastFM(commands.Cog):
         last.fm related commands.
         """
 
+        await ctx.defer()
+
         user: pylast.User = self.network.get_user(lfm_user)
 
         try:
